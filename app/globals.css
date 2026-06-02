@@ -1,0 +1,117 @@
+/* =========================================================
+   Bizce sizce — visual identity
+   Dark, editorial, trustworthy. Like a respected publication.
+   ========================================================= */
+:root {
+  --bg:        #0d0d0f;   /* near-black background */
+  --surface:   #17171b;   /* cards */
+  --surface-2: #1f1f25;   /* raised */
+  --border:    #2a2a31;
+  --text:      #f4f1e9;   /* warm off-white */
+  --muted:     #9a978f;   /* secondary text */
+  --accent:    #e8c547;   /* warm yellow — primary */
+  --accent-ink:#1a1500;   /* text on yellow */
+  --coral:     #ff5d52;   /* outlier / disagree highlight */
+  --agree:     #e8c547;
+  --disagree:  #6f6cff;   /* distinct from coral so bars read clearly */
+  --radius: 16px;
+  --shadow: 0 8px 30px rgba(0,0,0,.45);
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text); }
+body {
+  font-family: "Spline Sans", system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  line-height: 1.5;
+}
+
+.serif  { font-family: "Fraunces", Georgia, serif; }
+.mono   { font-family: "Spline Sans Mono", ui-monospace, monospace; }
+
+/* Layout ------------------------------------------------- */
+.shell { max-width: 640px; margin: 0 auto; padding: 0 18px 80px; }
+
+/* Header ------------------------------------------------- */
+.header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 18px 0; position: sticky; top: 0; z-index: 20;
+  background: linear-gradient(var(--bg) 70%, transparent);
+}
+.logo { font-family: "Fraunces", serif; font-weight: 600; font-size: 20px; letter-spacing: -.01em; }
+.logo b { color: var(--accent); }
+
+/* Buttons ------------------------------------------------ */
+.btn {
+  font: inherit; cursor: pointer; border-radius: 999px; border: 1px solid var(--border);
+  background: var(--surface-2); color: var(--text);
+  padding: 14px 18px; min-height: 48px; /* thumb-sized */
+  transition: transform .08s ease, background .15s ease, border-color .15s ease;
+}
+.btn:active { transform: scale(.98); }
+.btn-accent { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 600; }
+.btn-ghost  { background: transparent; }
+.btn-block  { width: 100%; display: flex; align-items: center; justify-content: center; gap: 10px; }
+
+/* Chips (region / age selection) ------------------------- */
+.chips { display: flex; flex-wrap: wrap; gap: 10px; }
+.chip {
+  font: inherit; cursor: pointer; padding: 12px 16px; min-height: 46px;
+  border-radius: 999px; border: 1px solid var(--border);
+  background: var(--surface); color: var(--text);
+}
+.chip[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 600; }
+
+/* Cards -------------------------------------------------- */
+.card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 22px; margin: 16px 0; box-shadow: var(--shadow);
+}
+.card.daily { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent), var(--shadow); }
+.kicker { font-family: "Spline Sans Mono", monospace; font-size: 11px; letter-spacing: .12em;
+          text-transform: uppercase; color: var(--accent); margin-bottom: 8px; }
+.question { font-family: "Fraunces", serif; font-size: 24px; line-height: 1.25; font-weight: 500; margin: 0 0 18px; }
+
+/* Vote buttons row -------------------------------------- */
+.vote-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+/* Result bars ------------------------------------------- */
+.bar-wrap { margin-top: 6px; }
+.bar-label { display: flex; justify-content: space-between; font-size: 14px; margin: 12px 0 6px; }
+.bar-pct { font-family: "Spline Sans Mono", monospace; font-weight: 600; }
+.bar { height: 14px; border-radius: 999px; background: var(--surface-2); overflow: hidden; }
+.bar > span { display: block; height: 100%; width: 0; border-radius: 999px;
+              transition: width .9s cubic-bezier(.22,1,.36,1); }
+.bar.agree > span    { background: var(--agree); }
+.bar.disagree > span { background: var(--disagree); }
+.total { font-family: "Spline Sans Mono", monospace; font-size: 13px; color: var(--muted); margin-top: 14px; }
+.verdict { margin-top: 14px; font-family: "Fraunces", serif; font-size: 18px; }
+.verdict.majority { color: var(--accent); }
+.verdict.outlier  { color: var(--coral); }
+
+/* Region breakdown -------------------------------------- */
+.region-table { margin-top: 16px; border-top: 1px solid var(--border); padding-top: 12px; }
+.region-row { display: grid; grid-template-columns: 90px 1fr 48px; gap: 10px; align-items: center;
+              font-size: 13px; margin: 8px 0; }
+.region-row .mini-bar { height: 8px; border-radius: 999px; background: var(--surface-2); overflow: hidden; }
+.region-row .mini-bar > span { display: block; height: 100%; background: var(--agree); }
+
+/* States ------------------------------------------------- */
+.skeleton { background: linear-gradient(90deg, var(--surface) 25%, var(--surface-2) 37%, var(--surface) 63%);
+            background-size: 400% 100%; animation: shimmer 1.4s ease infinite; border-radius: var(--radius); }
+@keyframes shimmer { 0% { background-position: 100% 0 } 100% { background-position: -100% 0 } }
+.empty, .error { text-align: center; color: var(--muted); padding: 40px 20px; }
+.error { color: var(--coral); }
+
+/* Footer ------------------------------------------------- */
+.footer { margin-top: 40px; padding-top: 20px; border-top: 1px solid var(--border);
+          font-size: 13px; color: var(--muted); display: flex; gap: 16px; flex-wrap: wrap; }
+.footer a { color: var(--muted); }
+
+a { color: var(--accent); text-decoration: none; }
+.center { text-align: center; }
+.muted { color: var(--muted); }
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation: none !important; transition: none !important; }
+}
