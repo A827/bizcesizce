@@ -28,9 +28,22 @@ export async function rejectSuggestion(id: string) {
 
 export async function createTopic(input: {
   question_tr: string; question_en: string; category: Category;
+  options?: { label_tr: string; label_en: string }[];
 }) {
   const sb = await requireAdmin(); if (!sb) return { ok: false };
-  await sb.from('topics').insert({ ...input, is_active: true });
+  const opts = (input.options ?? []).filter((o) => o.label_tr.trim());
+  const isMulti = opts.length >= 2;
+  const { data: topic } = await sb.from('topics').insert({
+    question_tr: input.question_tr, question_en: input.question_en, category: input.category,
+    is_active: true, poll_type: isMulti ? 'multi' : 'binary',
+  }).select('id').single();
+
+  if (isMulti && topic?.id) {
+    await sb.from('topic_options').insert(
+      opts.map((o, i) => ({ topic_id: topic.id, label_tr: o.label_tr.trim(),
+        label_en: o.label_en.trim() || null, position: i }))
+    );
+  }
   revalidatePath('/admin'); revalidatePath('/'); return { ok: true };
 }
 

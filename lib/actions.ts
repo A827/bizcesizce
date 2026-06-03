@@ -4,7 +4,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 import { Choice } from '@/lib/constants';
-import { Comment, Sponsor, SponsorPlacement } from '@/lib/types';
+import { Comment, OptionResult, Sponsor, SponsorPlacement } from '@/lib/types';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { moderateText } from '@/lib/moderation';
 
@@ -38,6 +38,39 @@ export async function castVote(topicId: string, choice: Choice) {
 
   revalidatePath('/');
   return { ok: true as const, choice };
+}
+
+// --- Cast a vote on a multiple-choice option ---
+export async function castVoteOption(topicId: string, optionId: string) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { ok: false, reason: 'not_signed_in' as const };
+
+  const { data: p } = await supabase
+    .from('profiles')
+    .select('region, age_band, gender, education, employment, origin')
+    .eq('user_id', user.id).single();
+  if (!p?.region || !p?.age_band) return { ok: false, reason: 'no_profile' as const };
+
+  const { error } = await supabase.from('votes').insert({
+    topic_id: topicId, user_id: user.id, option_id: optionId,
+    region: p.region, age_band: p.age_band,
+    gender: p.gender, education: p.education, employment: p.employment, origin: p.origin,
+  });
+  if (error) {
+    if (error.code === '23505') return { ok: false, reason: 'already_voted' as const };
+    if (error.code === '23514' || /rate_limit/.test(error.message)) return { ok: false, reason: 'rate_limited' as const };
+    return { ok: false, reason: 'error' as const };
+  }
+  revalidatePath('/');
+  return { ok: true as const };
+}
+
+// --- Per-option results (aggregate only) ---
+export async function getOptionResults(topicId: string): Promise<OptionResult[]> {
+  const supabase = await createClient();
+  const { data } = await supabase.rpc('topic_option_results', { p_topic_id: topicId });
+  return (data ?? []) as OptionResult[];
 }
 
 // --- Read aggregate results for one topic (never individual votes) ---

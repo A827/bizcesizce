@@ -38,6 +38,7 @@ export const CATEGORIES = [
 export type Category = (typeof CATEGORIES)[number];
 
 export type Choice = 'agree' | 'disagree';
+export type PollType = 'binary' | 'multi';
 
 // Privacy / believability thresholds for PUBLIC result displays.
 // The regional breakdown only shows once a topic has enough total votes,

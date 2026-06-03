@@ -1,4 +1,11 @@
-import { Category, Choice, CommentMode, CommentStatus } from './constants';
+import { Category, Choice, CommentMode, CommentStatus, PollType } from './constants';
+
+export type TopicOption = {
+  id: string;
+  label_tr: string;
+  label_en: string | null;
+  position: number;
+};
 
 export type Topic = {
   id: string;
@@ -10,8 +17,12 @@ export type Topic = {
   comments_enabled: boolean;
   comment_mode: CommentMode;
   scheduled_daily_date: string | null;
+  poll_type: PollType;
+  options?: TopicOption[];
   created_at: string;
 };
+
+export type OptionResult = { option_id: string; label_tr: string; label_en: string | null; votes: number };
 
 export type MyVote = { topic_id: string; choice: Choice } | null;
 
