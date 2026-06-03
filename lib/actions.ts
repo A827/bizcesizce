@@ -5,6 +5,8 @@ import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 import { Choice } from '@/lib/constants';
 import { Comment } from '@/lib/types';
+import { createAdminClient } from '@/lib/supabase/admin';
+import { moderateText } from '@/lib/moderation';
 
 export type RegionResult = { region: string; agree: number; disagree: number };
 export type TopicResults = { total_agree: number; total_disagree: number; regions: RegionResult[] };
@@ -29,8 +31,9 @@ export async function castVote(topicId: string, choice: Choice) {
   });
 
   if (error) {
-    const already = error.code === '23505';
-    return { ok: false, reason: already ? ('already_voted' as const) : ('error' as const) };
+    if (error.code === '23505') return { ok: false, reason: 'already_voted' as const };
+    if (error.code === '23514' || /rate_limit/.test(error.message)) return { ok: false, reason: 'rate_limited' as const };
+    return { ok: false, reason: 'error' as const };
   }
 
   revalidatePath('/');
@@ -71,10 +74,31 @@ export async function postComment(topicId: string, body: string) {
   const trimmed = body.trim();
   if (!trimmed || trimmed.length > 600) return { ok: false, reason: 'invalid' as const };
 
-  const { error } = await supabase.from('comments').insert({
+  const { data: inserted, error } = await supabase.from('comments').insert({
     topic_id: topicId, user_id: user.id, body: trimmed,
-  });
-  if (error) return { ok: false, reason: 'error' as const };
+  }).select('id').single();
+
+  if (error) {
+    // Rate-limit trigger raises a check_violation when posting too fast.
+    if (error.code === '23514' || /rate_limit/.test(error.message)) {
+      return { ok: false, reason: 'rate_limited' as const };
+    }
+    return { ok: false, reason: 'error' as const };
+  }
+
+  // Auto-moderation: for 'auto' topics, ask the AI moderator and flip status.
+  const { data: topic } = await supabase
+    .from('topics').select('comment_mode').eq('id', topicId).single();
+  if (topic?.comment_mode === 'auto' && inserted?.id) {
+    const decision = await moderateText(trimmed);
+    if (decision === 'approve' || decision === 'reject') {
+      const admin = createAdminClient();
+      await admin.from('comments')
+        .update({ status: decision === 'approve' ? 'approved' : 'rejected' })
+        .eq('id', inserted.id);
+    }
+  }
+
   revalidatePath('/');
   return { ok: true as const };
 }

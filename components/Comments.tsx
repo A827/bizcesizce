@@ -8,7 +8,7 @@ export function Comments({ topicId, canComment }: { topicId: string; canComment:
   const { t, lang } = useLang();
   const [items, setItems] = useState<Comment[] | null>(null);
   const [body, setBody] = useState('');
-  const [state, setState] = useState<'idle' | 'saving' | 'pending' | 'error'>('idle');
+  const [state, setState] = useState<'idle' | 'saving' | 'pending' | 'error' | 'rate'>('idle');
 
   useEffect(() => { getComments(topicId).then(setItems); }, [topicId]);
 
@@ -23,6 +23,8 @@ export function Comments({ topicId, canComment }: { topicId: string; canComment:
       // If nothing newly visible, it's awaiting moderation.
       setState('pending');
       setTimeout(() => setState('idle'), 4000);
+    } else if (res.reason === 'rate_limited') {
+      setState('rate');
     } else {
       setState('error');
     }
@@ -52,6 +54,7 @@ export function Comments({ topicId, canComment }: { topicId: string; canComment:
       )}
 
       {state === 'pending' && <p className="muted" style={{ fontSize: 13 }}>{t('commentPending')}</p>}
+      {state === 'rate' && <p className="error" style={{ fontSize: 13 }}>{t('rateLimited')}</p>}
       {state === 'error' && <p className="error" style={{ fontSize: 13 }}>{t('errorGeneric')}</p>}
 
       {items === null ? (

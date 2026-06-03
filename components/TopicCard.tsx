@@ -19,17 +19,20 @@ export function TopicCard({
   const [results, setResults] = useState<TopicResults | null>(initialResults);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(false);
+  const [rate, setRate] = useState(false);
 
   const question = lang === 'tr' ? topic.question_tr : topic.question_en;
   const voted = myChoice !== null;
 
   async function vote(choice: Choice) {
     if (busy || voted) return;
-    setBusy(true); setError(false);
+    setBusy(true); setError(false); setRate(false);
     const res = await castVote(topic.id, choice);
     if (res.ok || res.reason === 'already_voted') {
       setMyChoice(choice);
       setResults(await getResults(topic.id));
+    } else if (res.reason === 'rate_limited') {
+      setRate(true);
     } else {
       setError(true);
     }
@@ -94,6 +97,7 @@ export function TopicCard({
       )}
 
       {error && <p className="error" style={{ marginTop: 12 }}>{t('errorGeneric')}</p>}
+      {rate && <p className="error" style={{ marginTop: 12 }}>{t('rateLimited')}</p>}
 
       {topic.comments_enabled && <Comments topicId={topic.id} canComment={voted} />}
     </article>

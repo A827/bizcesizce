@@ -34,6 +34,7 @@ export const STRINGS = {
   commentPending: { tr: 'Yorumun incelendikten sonra yayınlanacak.', en: 'Your comment will appear after review.' },
   noComments:     { tr: 'Henüz yorum yok. İlk yorumu sen yaz.',     en: 'No comments yet. Be the first.' },
   voteToComment:  { tr: 'Yorum yapmak için önce oy ver.',          en: 'Vote first to comment.' },
+  rateLimited:    { tr: 'Çok hızlısın, biraz bekleyip tekrar dene.', en: "You're going too fast — please wait a moment." },
 
   // Home
   dailyKicker:    { tr: 'Günün sorusu',                              en: 'Question of the day' },
