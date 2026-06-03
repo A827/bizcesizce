@@ -2,6 +2,7 @@
 import { ImageResponse } from 'next/og';
 
 export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
 
 export async function GET() {
   const YELLOW = '#e8c547', BG = '#0d0d0f', TEXT = '#f4f1e9', MUTED = '#9a978f';
