@@ -4,6 +4,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 import { Choice } from '@/lib/constants';
+import { Comment } from '@/lib/types';
 
 export type RegionResult = { region: string; agree: number; disagree: number };
 export type TopicResults = { total_agree: number; total_disagree: number; regions: RegionResult[] };
@@ -14,17 +15,19 @@ export async function castVote(topicId: string, choice: Choice) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { ok: false, reason: 'not_signed_in' as const };
 
-  // Read the voter's region/age to copy onto the vote.
-  const { data: profile } = await supabase
-    .from('profiles').select('region, age_band').eq('user_id', user.id).single();
-  if (!profile?.region || !profile?.age_band) return { ok: false, reason: 'no_profile' as const };
+  // Read the voter's profile to copy demographics onto the vote.
+  const { data: p } = await supabase
+    .from('profiles')
+    .select('region, age_band, gender, education, employment, origin')
+    .eq('user_id', user.id).single();
+  if (!p?.region || !p?.age_band) return { ok: false, reason: 'no_profile' as const };
 
   const { error } = await supabase.from('votes').insert({
     topic_id: topicId, user_id: user.id, choice,
-    region: profile.region, age_band: profile.age_band,
+    region: p.region, age_band: p.age_band,
+    gender: p.gender, education: p.education, employment: p.employment, origin: p.origin,
   });
 
-  // A duplicate vote trips the unique constraint — treat as "already voted".
   if (error) {
     const already = error.code === '23505';
     return { ok: false, reason: already ? ('already_voted' as const) : ('error' as const) };
@@ -47,4 +50,31 @@ export async function getResults(topicId: string): Promise<TopicResults> {
       .map((r) => ({ region: r.region, agree: r.agree_count, disagree: r.disagree_count }))
       .sort((a, b) => (b.agree + b.disagree) - (a.agree + a.disagree)),
   };
+}
+
+// --- Comments -------------------------------------------------------
+export async function getComments(topicId: string): Promise<Comment[]> {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from('comments')
+    .select('id, topic_id, body, status, region, created_at')
+    .eq('topic_id', topicId)
+    .order('created_at', { ascending: false })
+    .limit(100);
+  return (data ?? []) as Comment[];
+}
+
+export async function postComment(topicId: string, body: string) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { ok: false, reason: 'not_signed_in' as const };
+  const trimmed = body.trim();
+  if (!trimmed || trimmed.length > 600) return { ok: false, reason: 'invalid' as const };
+
+  const { error } = await supabase.from('comments').insert({
+    topic_id: topicId, user_id: user.id, body: trimmed,
+  });
+  if (error) return { ok: false, reason: 'error' as const };
+  revalidatePath('/');
+  return { ok: true as const };
 }

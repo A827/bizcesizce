@@ -1,6 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { useLang } from './LanguageProvider';
+import { Comments } from './Comments';
 import { castVote, getResults, TopicResults } from '@/lib/actions';
 import { Topic, MyVote } from '@/lib/types';
 import { Choice } from '@/lib/constants';
@@ -93,6 +94,8 @@ export function TopicCard({
       )}
 
       {error && <p className="error" style={{ marginTop: 12 }}>{t('errorGeneric')}</p>}
+
+      {topic.comments_enabled && <Comments topicId={topic.id} canComment={voted} />}
     </article>
   );
 }

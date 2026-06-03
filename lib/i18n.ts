@@ -8,6 +8,11 @@ export type Lang = 'tr' | 'en';
 export const STRINGS = {
   tagline:        { tr: 'Bizce sizce — sen ne diyorsun?',           en: 'Our view, your view — what do you say?' },
   continueGoogle: { tr: 'Google ile devam et',                       en: 'Continue with Google' },
+  orDivider:      { tr: 'veya',                                       en: 'or' },
+  emailPlaceholder:{ tr: 'E-posta adresin',                          en: 'Your email' },
+  emailSend:      { tr: 'E-posta ile giriş bağlantısı gönder',       en: 'Send me a sign-in link' },
+  emailSent:      { tr: 'Giriş bağlantısı e-postana gönderildi. Gelen kutunu kontrol et.', en: 'A sign-in link is on its way. Check your inbox.' },
+  loginBlurb:     { tr: 'Kuzey Kıbrıs ne düşünüyor? Oyla, anında sonuçları gör.', en: 'What does North Cyprus think? Vote and see live results.' },
 
   // First-run setup
   setupTitle:     { tr: 'Birkaç saniyelik kurulum',                  en: 'A few seconds of setup' },
@@ -15,7 +20,20 @@ export const STRINGS = {
                     en: 'Choose your region and age range so we can show results by region. Your identity is never shared.' },
   chooseRegion:   { tr: 'Bölgen',                                    en: 'Your region' },
   chooseAge:      { tr: 'Yaş aralığın',                              en: 'Your age range' },
+  chooseGender:   { tr: 'Cinsiyet',                                  en: 'Gender' },
+  chooseEducation:{ tr: 'Eğitim durumu',                            en: 'Education' },
+  chooseEmployment:{ tr: 'Çalışma durumu',                          en: 'Employment' },
+  chooseOrigin:   { tr: 'Nereden olduğun',                          en: 'Where you are from' },
   start:          { tr: 'Başla',                                     en: 'Start' },
+
+  // Comments
+  comments:       { tr: 'Yorumlar',                                  en: 'Comments' },
+  commentsOff:    { tr: 'Bu konuda yorumlar kapalı.',               en: 'Comments are off for this topic.' },
+  addComment:     { tr: 'Yorum yaz…',                               en: 'Write a comment…' },
+  postComment:    { tr: 'Gönder',                                    en: 'Post' },
+  commentPending: { tr: 'Yorumun incelendikten sonra yayınlanacak.', en: 'Your comment will appear after review.' },
+  noComments:     { tr: 'Henüz yorum yok. İlk yorumu sen yaz.',     en: 'No comments yet. Be the first.' },
+  voteToComment:  { tr: 'Yorum yapmak için önce oy ver.',          en: 'Vote first to comment.' },
 
   // Home
   dailyKicker:    { tr: 'Günün sorusu',                              en: 'Question of the day' },
@@ -48,6 +66,15 @@ export const STRINGS = {
   setDaily:       { tr: 'Günün sorusu yap',                          en: 'Make question of the day' },
   deactivate:     { tr: 'Gizle',                                     en: 'Hide' },
   createTopic:    { tr: 'Yeni konu oluştur',                         en: 'Create new topic' },
+  tabSuggestions: { tr: 'Öneriler',                                  en: 'Suggestions' },
+  tabTopics:      { tr: 'Konular',                                    en: 'Topics' },
+  tabResults:     { tr: 'Sonuçlar',                                   en: 'Results' },
+  tabModeration:  { tr: 'Yorum denetimi',                            en: 'Comment moderation' },
+  commentsOn:     { tr: 'Yorumlar açık',                             en: 'Comments on' },
+  commentsAuto:   { tr: 'Otomatik onay',                             en: 'Auto-approve' },
+  exportCsv:      { tr: 'CSV indir',                                  en: 'Export CSV' },
+  overTime:       { tr: 'Zamana göre',                               en: 'Over time' },
+  noPending:      { tr: 'Bekleyen yorum yok.',                       en: 'No pending comments.' },
 
   // States
   loading:        { tr: 'Yükleniyor…',                              en: 'Loading…' },

@@ -11,7 +11,6 @@ export default async function AdminPage() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect('/login');
 
-  // Owner-only gate.
   const { data: profile } = await supabase
     .from('profiles').select('is_admin').eq('user_id', user.id).single();
   if (!profile?.is_admin) redirect('/');
@@ -25,7 +24,7 @@ export default async function AdminPage() {
   return (
     <>
       <Header />
-      <main className="shell">
+      <main className="shell" style={{ maxWidth: 760 }}>
         <AdminPanel topics={(topics ?? []) as Topic[]} suggestions={suggestions ?? []} />
       </main>
     </>
