@@ -127,6 +127,7 @@ function TopicsTab({ topics }: { topics: Topic[] }) {
   const [qtr, setQtr] = useState(''); const [qen, setQen] = useState(''); const [cat, setCat] = useState<Category>('Other');
   const [multi, setMulti] = useState(false);
   const [opts, setOpts] = useState<{ tr: string; en: string }[]>([{ tr: '', en: '' }, { tr: '', en: '' }]);
+  const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
 
   const setOpt = (i: number, k: 'tr' | 'en', v: string) =>
     setOpts((arr) => arr.map((o, j) => (j === i ? { ...o, [k]: v } : o)));
@@ -164,12 +165,18 @@ function TopicsTab({ topics }: { topics: Topic[] }) {
 
         <button className="btn btn-accent btn-block" disabled={pending || !canCreate}
           onClick={() => start(async () => {
-            await createTopic({ question_tr: qtr.trim(), question_en: qen.trim(), category: cat,
+            const res = await createTopic({ question_tr: qtr.trim(), question_en: qen.trim(), category: cat,
               options: multi ? validOpts.map((o) => ({ label_tr: o.tr, label_en: o.en })) : undefined });
-            setQtr(''); setQen(''); setMulti(false); setOpts([{ tr: '', en: '' }, { tr: '', en: '' }]);
+            if (res.ok) {
+              setMsg({ ok: true, text: 'Oluşturuldu ✓' });
+              setQtr(''); setQen(''); setMulti(false); setOpts([{ tr: '', en: '' }, { tr: '', en: '' }]);
+            } else {
+              setMsg({ ok: false, text: 'Hata: ' + (res.error ?? '') });
+            }
           })}>
           {t('createTopic')}
         </button>
+        {msg && <p style={{ marginTop: 10, fontSize: 13, color: msg.ok ? 'var(--accent)' : 'var(--coral)' }}>{msg.text}</p>}
       </div>
 
       {topics.map((tp) => (

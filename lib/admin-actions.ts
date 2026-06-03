@@ -2,7 +2,19 @@
 // Owner-only actions. Every one re-checks is_admin on the server, so even
 // if someone reached the page they could do nothing without being an admin.
 import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { revalidatePath } from 'next/cache';
+
+// Verify the caller is an admin (via their session), then return a
+// service-role client for the write so RLS edge-cases can't block it.
+async function adminWriter() {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return null;
+  const { data: p } = await supabase.from('profiles').select('is_admin').eq('user_id', user.id).single();
+  if (!p?.is_admin) return null;
+  return createAdminClient();
+}
 import { Category, CommentMode, CommentStatus } from '@/lib/constants';
 import { Sponsor, SponsorPlacement } from '@/lib/types';
 
@@ -30,19 +42,22 @@ export async function createTopic(input: {
   question_tr: string; question_en: string; category: Category;
   options?: { label_tr: string; label_en: string }[];
 }) {
-  const sb = await requireAdmin(); if (!sb) return { ok: false };
+  const writer = await adminWriter(); if (!writer) return { ok: false, error: 'not admin' };
   const opts = (input.options ?? []).filter((o) => o.label_tr.trim());
   const isMulti = opts.length >= 2;
-  const { data: topic } = await sb.from('topics').insert({
+  const { data: topic, error } = await writer.from('topics').insert({
     question_tr: input.question_tr, question_en: input.question_en, category: input.category,
     is_active: true, poll_type: isMulti ? 'multi' : 'binary',
   }).select('id').single();
 
-  if (isMulti && topic?.id) {
-    await sb.from('topic_options').insert(
+  if (error || !topic?.id) return { ok: false, error: error?.message ?? 'insert failed' };
+
+  if (isMulti) {
+    const { error: oerr } = await writer.from('topic_options').insert(
       opts.map((o, i) => ({ topic_id: topic.id, label_tr: o.label_tr.trim(),
         label_en: o.label_en.trim() || null, position: i }))
     );
+    if (oerr) return { ok: false, error: oerr.message };
   }
   revalidatePath('/admin'); revalidatePath('/'); return { ok: true };
 }
@@ -112,8 +127,8 @@ export async function listSponsors(): Promise<Sponsor[]> {
 export async function createSponsor(input: {
   label_tr: string; label_en: string; url: string; placement: SponsorPlacement;
 }) {
-  const sb = await requireAdmin(); if (!sb) return { ok: false };
-  await sb.from('sponsors').insert({ ...input, is_active: true });
+  const writer = await adminWriter(); if (!writer) return { ok: false };
+  await writer.from('sponsors').insert({ ...input, is_active: true });
   revalidatePath('/admin'); revalidatePath('/'); return { ok: true };
 }
 
