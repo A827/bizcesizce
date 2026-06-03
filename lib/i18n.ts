@@ -78,6 +78,7 @@ export const STRINGS = {
   tabResults:     { tr: 'Sonuçlar',                                   en: 'Results' },
   tabModeration:  { tr: 'Yorum denetimi',                            en: 'Comment moderation' },
   tabSponsors:    { tr: 'Sponsorlar',                                 en: 'Sponsors' },
+  tabOverview:    { tr: 'Genel bakış',                                en: 'Overview' },
   commentsOn:     { tr: 'Yorumlar açık',                             en: 'Comments on' },
   commentsAuto:   { tr: 'Otomatik onay',                             en: 'Auto-approve' },
   exportCsv:      { tr: 'CSV indir',                                  en: 'Export CSV' },

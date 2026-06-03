@@ -10,11 +10,14 @@ import {
   listPendingComments, moderateComment, PendingComment,
   getBreakdown, getTimeseries, BreakdownRow, TimePoint,
   listSponsors, createSponsor, setSponsorActive, deleteSponsor,
+  getOptionBreakdown, OptionBreakdownRow,
+  getOverview, Overview, listAudit, AuditRow,
 } from '@/lib/admin-actions';
-import { Sponsor, SponsorPlacement } from '@/lib/types';
+import { getOptionResults } from '@/lib/actions';
+import { Sponsor, SponsorPlacement, OptionResult } from '@/lib/types';
 
 type Suggestion = { id: string; question_tr: string; question_en: string | null };
-type Tab = 'suggestions' | 'topics' | 'results' | 'moderation' | 'sponsors';
+type Tab = 'overview' | 'suggestions' | 'topics' | 'results' | 'moderation' | 'sponsors';
 
 const inputStyle: React.CSSProperties = {
   width: '100%', padding: 12, borderRadius: 10, background: 'var(--surface)',
@@ -23,7 +26,7 @@ const inputStyle: React.CSSProperties = {
 
 export function AdminPanel({ topics, suggestions }: { topics: Topic[]; suggestions: Suggestion[] }) {
   const { t } = useLang();
-  const [tab, setTab] = useState<Tab>('topics');
+  const [tab, setTab] = useState<Tab>('overview');
 
   const TabBtn = ({ id, label }: { id: Tab; label: string }) => (
     <button className="btn" onClick={() => setTab(id)}
@@ -39,6 +42,7 @@ export function AdminPanel({ topics, suggestions }: { topics: Topic[]; suggestio
     <>
       <h1 className="serif" style={{ fontSize: 28 }}>{t('adminTitle')}</h1>
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', margin: '16px 0 8px' }}>
+        <TabBtn id="overview" label={t('tabOverview')} />
         <TabBtn id="suggestions" label={`${t('tabSuggestions')} (${suggestions.length})`} />
         <TabBtn id="topics" label={t('tabTopics')} />
         <TabBtn id="results" label={t('tabResults')} />
@@ -46,6 +50,7 @@ export function AdminPanel({ topics, suggestions }: { topics: Topic[]; suggestio
         <TabBtn id="sponsors" label={t('tabSponsors')} />
       </div>
 
+      {tab === 'overview' && <OverviewTab />}
       {tab === 'suggestions' && <SuggestionsTab suggestions={suggestions} />}
       {tab === 'topics' && <TopicsTab topics={topics} />}
       {tab === 'results' && <ResultsTab topics={topics} />}
@@ -98,6 +103,44 @@ function SponsorsTab() {
             </div>
           </div>
         ))}
+    </>
+  );
+}
+
+function OverviewTab() {
+  const [ov, setOv] = useState<Overview | null>(null);
+  const [audit, setAudit] = useState<AuditRow[] | null>(null);
+  useEffect(() => { getOverview().then(setOv); listAudit().then(setAudit); }, []);
+
+  const Stat = ({ label, value }: { label: string; value: number }) => (
+    <div style={{ background: 'var(--surface-2)', borderRadius: 'var(--radius)', padding: '14px 16px' }}>
+      <div className="mono" style={{ fontSize: 11, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.1em' }}>{label}</div>
+      <div className="serif" style={{ fontSize: 26 }}>{value.toLocaleString('tr-TR')}</div>
+    </div>
+  );
+
+  return (
+    <>
+      {ov === null ? <div className="skeleton" style={{ height: 90 }} /> : (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: 10, marginBottom: 16 }}>
+          <Stat label="Toplam oy" value={ov.total_votes} />
+          <Stat label="Bugün" value={ov.votes_today} />
+          <Stat label="Konu" value={ov.total_topics} />
+          <Stat label="Yorum" value={ov.total_comments} />
+          <Stat label="Kullanıcı" value={ov.total_users} />
+        </div>
+      )}
+      <h2 className="kicker">Son işlemler</h2>
+      {audit === null ? <div className="skeleton" style={{ height: 60 }} /> :
+        audit.length === 0 ? <p className="muted">—</p> :
+        <div className="card">
+          {audit.map((a) => (
+            <div key={a.id} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, padding: '6px 0', borderBottom: '1px solid var(--border)' }}>
+              <span>{a.action}{a.detail ? ` · ${a.detail}` : ''}</span>
+              <span className="mono" style={{ color: 'var(--muted)' }}>{new Date(a.created_at).toLocaleString('tr-TR')}</span>
+            </div>
+          ))}
+        </div>}
     </>
   );
 }
@@ -275,13 +318,15 @@ function ResultsTab({ topics }: { topics: Topic[] }) {
   const [topicId, setTopicId] = useState<string>(topics[0]?.id ?? '');
   const [rows, setRows] = useState<BreakdownRow[] | null>(null);
   const [series, setSeries] = useState<TimePoint[] | null>(null);
+  const selected = topics.find((tp) => tp.id === topicId);
+  const isMulti = selected?.poll_type === 'multi';
 
   useEffect(() => {
-    if (!topicId) return;
+    if (!topicId || isMulti) return;
     setRows(null); setSeries(null);
     getBreakdown(topicId).then(setRows);
     getTimeseries(topicId).then(setSeries);
-  }, [topicId]);
+  }, [topicId, isMulti]);
 
   function exportCsv() {
     if (!rows) return;
@@ -301,7 +346,9 @@ function ResultsTab({ topics }: { topics: Topic[] }) {
         {topics.map((tp) => <option key={tp.id} value={tp.id}>{tp.question_tr}</option>)}
       </select>
 
-      {rows === null ? <div className="skeleton" style={{ height: 120 }} /> : (
+      {isMulti && <McResults topicId={topicId} />}
+
+      {!isMulti && (rows === null ? <div className="skeleton" style={{ height: 120 }} /> : (
         <>
           <button className="btn" style={{ minHeight: 0, padding: '8px 12px', marginBottom: 12 }} onClick={exportCsv}>
             {t('exportCsv')}
@@ -343,7 +390,69 @@ function ResultsTab({ topics }: { topics: Topic[] }) {
             }) : <p className="muted" style={{ fontSize: 13 }}>—</p>}
           </div>
         </>
-      )}
+      ))}
+    </>
+  );
+}
+
+function McResults({ topicId }: { topicId: string }) {
+  const { lang } = useLang();
+  const [overall, setOverall] = useState<OptionResult[] | null>(null);
+  const [bd, setBd] = useState<OptionBreakdownRow[] | null>(null);
+
+  useEffect(() => {
+    setOverall(null); setBd(null);
+    getOptionResults(topicId).then(setOverall);
+    getOptionBreakdown(topicId).then(setBd);
+  }, [topicId]);
+
+  if (overall === null) return <div className="skeleton" style={{ height: 120 }} />;
+  const total = overall.reduce((s, o) => s + o.votes, 0);
+  const dims = ['region', 'age', 'gender', 'education', 'employment', 'origin'];
+
+  return (
+    <>
+      <div className="card">
+        <div className="kicker">Genel</div>
+        {overall.map((o) => {
+          const pct = total ? Math.round((o.votes / total) * 100) : 0;
+          return (
+            <div key={o.option_id} style={{ margin: '10px 0' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, marginBottom: 4 }}>
+                <span>{lang === 'tr' ? o.label_tr : (o.label_en || o.label_tr)}</span>
+                <span className="mono">{pct}% · {o.votes}</span>
+              </div>
+              <div className="bar agree"><span style={{ width: `${pct}%` }} /></div>
+            </div>
+          );
+        })}
+      </div>
+
+      {dims.map((d) => {
+        const drows = (bd ?? []).filter((r) => r.dimension === d);
+        if (drows.length === 0) return null;
+        const buckets = Array.from(new Set(drows.map((r) => r.bucket)));
+        return (
+          <div className="card" key={d}>
+            <div className="kicker">{DIM_LABEL[d] ?? d}</div>
+            {buckets.map((b) => {
+              const brows = drows.filter((r) => r.bucket === b);
+              const bt = brows.reduce((s, r) => s + r.votes, 0);
+              return (
+                <div key={b} style={{ margin: '8px 0', fontSize: 13 }}>
+                  <div style={{ marginBottom: 2 }}>{b}</div>
+                  {brows.map((r) => (
+                    <div key={r.option_label} style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--muted)' }}>
+                      <span>· {r.option_label}</span>
+                      <span className="mono">{bt ? Math.round((r.votes / bt) * 100) : 0}% · {r.votes}</span>
+                    </div>
+                  ))}
+                </div>
+              );
+            })}
+          </div>
+        );
+      })}
     </>
   );
 }

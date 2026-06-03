@@ -19,6 +19,7 @@ export const metadata: Metadata = {
     description: 'Kuzey Kıbrıs ne düşünüyor? Oyla, anında sonuçları gör.',
     images: ['/api/og'],
   },
+  appleWebApp: { capable: true, title: 'Bizce sizce', statusBarStyle: 'black-translucent' },
 };
 
 export const viewport = { themeColor: '#0d0d0f', width: 'device-width', initialScale: 1 };

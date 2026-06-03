@@ -15,6 +15,15 @@ async function adminWriter() {
   if (!p?.is_admin) return null;
   return createAdminClient();
 }
+
+async function logAudit(action: string, detail: string) {
+  try {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    const w = createAdminClient();
+    await w.from('admin_audit').insert({ actor: user?.email ?? user?.id ?? 'unknown', action, detail });
+  } catch { /* never block the main action on audit logging */ }
+}
 import { Category, CommentMode, CommentStatus } from '@/lib/constants';
 import { Sponsor, SponsorPlacement } from '@/lib/types';
 
@@ -59,6 +68,7 @@ export async function createTopic(input: {
     );
     if (oerr) return { ok: false, error: oerr.message };
   }
+  await logAudit('create_topic', input.question_tr.slice(0, 80));
   revalidatePath('/admin'); revalidatePath('/'); return { ok: true };
 }
 
@@ -143,6 +153,7 @@ export async function listPendingComments(): Promise<PendingComment[]> {
 export async function moderateComment(id: string, status: CommentStatus) {
   const sb = await requireAdmin(); if (!sb) return { ok: false };
   await sb.from('comments').update({ status }).eq('id', id);
+  await logAudit('moderate_comment', `${status}`);
   revalidatePath('/admin'); revalidatePath('/'); return { ok: true };
 }
 
@@ -189,4 +200,25 @@ export async function getTimeseries(topicId: string): Promise<TimePoint[]> {
   const sb = await requireAdmin(); if (!sb) return [];
   const { data } = await sb.rpc('admin_timeseries', { p_topic_id: topicId });
   return (data ?? []) as TimePoint[];
+}
+
+export type OptionBreakdownRow = { dimension: string; bucket: string; option_label: string; votes: number };
+export async function getOptionBreakdown(topicId: string): Promise<OptionBreakdownRow[]> {
+  const sb = await requireAdmin(); if (!sb) return [];
+  const { data } = await sb.rpc('admin_option_breakdown', { p_topic_id: topicId });
+  return (data ?? []) as OptionBreakdownRow[];
+}
+
+export type Overview = { total_votes: number; votes_today: number; total_topics: number; total_comments: number; total_users: number };
+export async function getOverview(): Promise<Overview | null> {
+  const sb = await requireAdmin(); if (!sb) return null;
+  const { data } = await sb.rpc('admin_overview');
+  return ((data ?? [])[0] ?? null) as Overview | null;
+}
+
+export type AuditRow = { id: string; actor: string | null; action: string; detail: string | null; created_at: string };
+export async function listAudit(): Promise<AuditRow[]> {
+  const sb = await requireAdmin(); if (!sb) return [];
+  const { data } = await sb.from('admin_audit').select('*').order('created_at', { ascending: false }).limit(100);
+  return (data ?? []) as AuditRow[];
 }
