@@ -62,6 +62,37 @@ export async function createTopic(input: {
   revalidatePath('/admin'); revalidatePath('/'); return { ok: true };
 }
 
+export async function updateTopicText(topicId: string, question_tr: string, question_en: string) {
+  const w = await adminWriter(); if (!w) return { ok: false };
+  if (!question_tr.trim() || !question_en.trim()) return { ok: false, error: 'empty' };
+  await w.from('topics').update({ question_tr: question_tr.trim(), question_en: question_en.trim() }).eq('id', topicId);
+  revalidatePath('/admin'); revalidatePath('/'); return { ok: true };
+}
+
+export async function addOption(topicId: string, label_tr: string, label_en: string) {
+  const w = await adminWriter(); if (!w) return { ok: false };
+  if (!label_tr.trim()) return { ok: false };
+  const { data: max } = await w.from('topic_options').select('position')
+    .eq('topic_id', topicId).order('position', { ascending: false }).limit(1).single();
+  await w.from('topic_options').insert({
+    topic_id: topicId, label_tr: label_tr.trim(), label_en: label_en.trim() || null,
+    position: (max?.position ?? -1) + 1,
+  });
+  revalidatePath('/admin'); revalidatePath('/'); return { ok: true };
+}
+
+export async function updateOption(optionId: string, label_tr: string, label_en: string) {
+  const w = await adminWriter(); if (!w) return { ok: false };
+  await w.from('topic_options').update({ label_tr: label_tr.trim(), label_en: label_en.trim() || null }).eq('id', optionId);
+  revalidatePath('/admin'); revalidatePath('/'); return { ok: true };
+}
+
+export async function deleteOption(optionId: string) {
+  const w = await adminWriter(); if (!w) return { ok: false };
+  await w.from('topic_options').delete().eq('id', optionId);
+  revalidatePath('/admin'); revalidatePath('/'); return { ok: true };
+}
+
 export async function setDaily(topicId: string) {
   const sb = await requireAdmin(); if (!sb) return { ok: false };
   await sb.from('topics').update({ is_daily: false }).eq('is_daily', true);

@@ -6,6 +6,7 @@ import { Topic } from '@/lib/types';
 import {
   approveSuggestion, rejectSuggestion, createTopic, setDaily, setActive,
   setCommentsEnabled, setCommentMode, setScheduledDate,
+  updateTopicText, addOption, updateOption, deleteOption,
   listPendingComments, moderateComment, PendingComment,
   getBreakdown, getTimeseries, BreakdownRow, TimePoint,
   listSponsors, createSponsor, setSponsorActive, deleteSponsor,
@@ -210,9 +211,58 @@ function TopicsTab({ topics }: { topics: Topic[] }) {
               style={{ padding: '6px 10px', borderRadius: 8, background: 'var(--surface)',
                 border: '1px solid var(--border)', color: 'var(--text)', font: 'inherit' }} />
           </div>
+          <EditTopic tp={tp} />
         </div>
       ))}
     </>
+  );
+}
+
+function EditTopic({ tp }: { tp: Topic }) {
+  const [open, setOpen] = useState(false);
+  const [pending, start] = useTransition();
+  const [qtr, setQtr] = useState(tp.question_tr);
+  const [qen, setQen] = useState(tp.question_en);
+  const [opts, setOpts] = useState(tp.options ?? []);
+  const [newTr, setNewTr] = useState(''); const [newEn, setNewEn] = useState('');
+
+  const inp: React.CSSProperties = { width: '100%', padding: 10, borderRadius: 8, background: 'var(--surface)',
+    border: '1px solid var(--border)', color: 'var(--text)', font: 'inherit', marginBottom: 8 };
+
+  return (
+    <div style={{ marginTop: 12, borderTop: '1px solid var(--border)', paddingTop: 10 }}>
+      <button className="btn" style={{ minHeight: 0, padding: '6px 12px' }} onClick={() => setOpen((o) => !o)}>
+        {open ? 'Kapat' : 'Düzenle'}
+      </button>
+      {open && (
+        <div style={{ marginTop: 10 }}>
+          <textarea style={{ ...inp, minHeight: 50 }} value={qtr} onChange={(e) => setQtr(e.target.value)} />
+          <textarea style={{ ...inp, minHeight: 50 }} value={qen} onChange={(e) => setQen(e.target.value)} />
+          <button className="btn btn-accent" style={{ minHeight: 0, padding: '8px 12px' }} disabled={pending}
+            onClick={() => start(() => { updateTopicText(tp.id, qtr, qen); })}>Soruyu kaydet</button>
+
+          {tp.poll_type === 'multi' && (
+            <div style={{ marginTop: 14 }}>
+              <div className="kicker">Şıklar</div>
+              {opts.map((o) => (
+                <div key={o.id} style={{ display: 'flex', gap: 8, alignItems: 'center', margin: '8px 0' }}>
+                  <input style={{ ...inp, marginBottom: 0 }} defaultValue={o.label_tr}
+                    onBlur={(e) => start(() => { updateOption(o.id, e.target.value, o.label_en ?? ''); })} />
+                  <button className="btn" style={{ minHeight: 0, padding: '8px 12px' }} disabled={pending}
+                    onClick={() => start(async () => { await deleteOption(o.id); setOpts((a) => a.filter((x) => x.id !== o.id)); })}>Sil</button>
+                </div>
+              ))}
+              <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+                <input style={{ ...inp, marginBottom: 0 }} placeholder="Yeni şık (TR)" value={newTr} onChange={(e) => setNewTr(e.target.value)} />
+                <input style={{ ...inp, marginBottom: 0 }} placeholder="(EN)" value={newEn} onChange={(e) => setNewEn(e.target.value)} />
+                <button className="btn btn-accent" style={{ minHeight: 0, padding: '8px 12px' }} disabled={pending || !newTr.trim()}
+                  onClick={() => start(async () => { await addOption(tp.id, newTr, newEn); setNewTr(''); setNewEn(''); })}>Ekle</button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
   );
 }
 
