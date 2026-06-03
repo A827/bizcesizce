@@ -15,6 +15,16 @@ export type Topic = {
 
 export type MyVote = { topic_id: string; choice: Choice } | null;
 
+export type SponsorPlacement = 'reveal' | 'feed' | 'footer';
+export type Sponsor = {
+  id: string;
+  label_tr: string;
+  label_en: string | null;
+  url: string;
+  placement: SponsorPlacement;
+  is_active: boolean;
+};
+
 export type Comment = {
   id: string;
   topic_id: string;

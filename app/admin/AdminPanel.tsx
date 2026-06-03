@@ -8,10 +8,12 @@ import {
   setCommentsEnabled, setCommentMode, setScheduledDate,
   listPendingComments, moderateComment, PendingComment,
   getBreakdown, getTimeseries, BreakdownRow, TimePoint,
+  listSponsors, createSponsor, setSponsorActive, deleteSponsor,
 } from '@/lib/admin-actions';
+import { Sponsor, SponsorPlacement } from '@/lib/types';
 
 type Suggestion = { id: string; question_tr: string; question_en: string | null };
-type Tab = 'suggestions' | 'topics' | 'results' | 'moderation';
+type Tab = 'suggestions' | 'topics' | 'results' | 'moderation' | 'sponsors';
 
 const inputStyle: React.CSSProperties = {
   width: '100%', padding: 12, borderRadius: 10, background: 'var(--surface)',
@@ -40,12 +42,61 @@ export function AdminPanel({ topics, suggestions }: { topics: Topic[]; suggestio
         <TabBtn id="topics" label={t('tabTopics')} />
         <TabBtn id="results" label={t('tabResults')} />
         <TabBtn id="moderation" label={t('tabModeration')} />
+        <TabBtn id="sponsors" label={t('tabSponsors')} />
       </div>
 
       {tab === 'suggestions' && <SuggestionsTab suggestions={suggestions} />}
       {tab === 'topics' && <TopicsTab topics={topics} />}
       {tab === 'results' && <ResultsTab topics={topics} />}
       {tab === 'moderation' && <ModerationTab topics={topics} />}
+      {tab === 'sponsors' && <SponsorsTab />}
+    </>
+  );
+}
+
+function SponsorsTab() {
+  const [items, setItems] = useState<Sponsor[] | null>(null);
+  const [pending, start] = useTransition();
+  const [ltr, setLtr] = useState(''); const [len, setLen] = useState('');
+  const [url, setUrl] = useState(''); const [placement, setPlacement] = useState<SponsorPlacement>('reveal');
+
+  useEffect(() => { listSponsors().then(setItems); }, []);
+  const refresh = async () => setItems(await listSponsors());
+
+  return (
+    <>
+      <h2 className="kicker" style={{ marginTop: 12 }}>Yeni sponsor</h2>
+      <div className="card">
+        <input style={inputStyle} placeholder="Etiket (TR) — örn. 'Bu anketi X destekliyor'" value={ltr} onChange={(e) => setLtr(e.target.value)} />
+        <input style={inputStyle} placeholder="Label (EN)" value={len} onChange={(e) => setLen(e.target.value)} />
+        <input style={inputStyle} placeholder="https://..." value={url} onChange={(e) => setUrl(e.target.value)} />
+        <select style={inputStyle} value={placement} onChange={(e) => setPlacement(e.target.value as SponsorPlacement)}>
+          <option value="reveal">Sonuç altı (reveal)</option>
+          <option value="feed">Akış içi (feed)</option>
+          <option value="footer">Altbilgi (footer)</option>
+        </select>
+        <button className="btn btn-accent btn-block" disabled={pending || !ltr.trim() || !url.trim()}
+          onClick={() => start(async () => { await createSponsor({ label_tr: ltr.trim(), label_en: len.trim(), url: url.trim(), placement }); setLtr(''); setLen(''); setUrl(''); await refresh(); })}>
+          Ekle
+        </button>
+      </div>
+
+      {items === null ? <div className="skeleton" style={{ height: 60 }} /> :
+        items.length === 0 ? <p className="muted">—</p> :
+        items.map((s) => (
+          <div className="card" key={s.id}>
+            <div style={{ fontSize: 15, marginBottom: 4 }}>{s.label_tr}</div>
+            <div className="mono muted" style={{ fontSize: 12, marginBottom: 10 }}>{s.placement} · {s.url}</div>
+            <div className="vote-row">
+              <button className="btn" disabled={pending} onClick={() => start(async () => { await setSponsorActive(s.id, !s.is_active); await refresh(); })}>
+                {s.is_active ? 'Pasifleştir' : 'Aktifleştir'}
+              </button>
+              <button className="btn" disabled={pending} onClick={() => start(async () => { await deleteSponsor(s.id); await refresh(); })}>
+                Sil
+              </button>
+            </div>
+          </div>
+        ))}
     </>
   );
 }

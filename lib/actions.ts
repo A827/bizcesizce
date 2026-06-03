@@ -4,7 +4,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 import { Choice } from '@/lib/constants';
-import { Comment } from '@/lib/types';
+import { Comment, Sponsor, SponsorPlacement } from '@/lib/types';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { moderateText } from '@/lib/moderation';
 
@@ -65,6 +65,16 @@ export async function getComments(topicId: string): Promise<Comment[]> {
     .order('created_at', { ascending: false })
     .limit(100);
   return (data ?? []) as Comment[];
+}
+
+// --- Sponsors (public reads active ones for a placement) ---
+export async function getSponsors(placement: SponsorPlacement): Promise<Sponsor[]> {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from('sponsors')
+    .select('id, label_tr, label_en, url, placement, is_active')
+    .eq('placement', placement).eq('is_active', true);
+  return (data ?? []) as Sponsor[];
 }
 
 export async function postComment(topicId: string, body: string) {

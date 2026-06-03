@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { useLang } from './LanguageProvider';
 import { Comments } from './Comments';
+import { SponsorSlot } from './SponsorSlot';
 import { castVote, getResults, TopicResults } from '@/lib/actions';
 import { Topic, MyVote } from '@/lib/types';
 import { Choice, MIN_BREAKDOWN_TOTAL, MIN_BUCKET, MIN_VERDICT_TOTAL } from '@/lib/constants';
@@ -106,6 +107,8 @@ export function TopicCard({
 
       {error && <p className="error" style={{ marginTop: 12 }}>{t('errorGeneric')}</p>}
       {rate && <p className="error" style={{ marginTop: 12 }}>{t('rateLimited')}</p>}
+
+      {voted && topic.is_daily && <SponsorSlot placement="reveal" />}
 
       {topic.comments_enabled && <Comments topicId={topic.id} canComment={voted} />}
     </article>

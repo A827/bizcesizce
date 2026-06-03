@@ -5,6 +5,7 @@ import { getResults } from '@/lib/actions';
 import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
 import { Feed } from '@/components/Feed';
+import { SponsorSlot } from '@/components/SponsorSlot';
 import { SuggestLabel } from '@/components/SuggestLabel';
 import { Topic } from '@/lib/types';
 
@@ -55,6 +56,7 @@ export default async function Home() {
       <Header />
       <main className="shell">
         <Feed items={enriched} />
+        <SponsorSlot placement="feed" />
         <Link href="/suggest" className="btn btn-block" style={{ marginTop: 24 }}>
           <SuggestLabel />
         </Link>

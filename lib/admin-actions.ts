@@ -4,6 +4,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 import { Category, CommentMode, CommentStatus } from '@/lib/constants';
+import { Sponsor, SponsorPlacement } from '@/lib/types';
 
 async function requireAdmin() {
   const supabase = await createClient();
@@ -83,6 +84,35 @@ export async function listPendingComments(): Promise<PendingComment[]> {
 export async function moderateComment(id: string, status: CommentStatus) {
   const sb = await requireAdmin(); if (!sb) return { ok: false };
   await sb.from('comments').update({ status }).eq('id', id);
+  revalidatePath('/admin'); revalidatePath('/'); return { ok: true };
+}
+
+// --- Sponsors ---
+export async function listSponsors(): Promise<Sponsor[]> {
+  const sb = await requireAdmin(); if (!sb) return [];
+  const { data } = await sb.from('sponsors')
+    .select('id, label_tr, label_en, url, placement, is_active')
+    .order('created_at', { ascending: false });
+  return (data ?? []) as Sponsor[];
+}
+
+export async function createSponsor(input: {
+  label_tr: string; label_en: string; url: string; placement: SponsorPlacement;
+}) {
+  const sb = await requireAdmin(); if (!sb) return { ok: false };
+  await sb.from('sponsors').insert({ ...input, is_active: true });
+  revalidatePath('/admin'); revalidatePath('/'); return { ok: true };
+}
+
+export async function setSponsorActive(id: string, active: boolean) {
+  const sb = await requireAdmin(); if (!sb) return { ok: false };
+  await sb.from('sponsors').update({ is_active: active }).eq('id', id);
+  revalidatePath('/admin'); revalidatePath('/'); return { ok: true };
+}
+
+export async function deleteSponsor(id: string) {
+  const sb = await requireAdmin(); if (!sb) return { ok: false };
+  await sb.from('sponsors').delete().eq('id', id);
   revalidatePath('/admin'); revalidatePath('/'); return { ok: true };
 }
 

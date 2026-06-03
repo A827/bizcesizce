@@ -72,6 +72,7 @@ export const STRINGS = {
   tabTopics:      { tr: 'Konular',                                    en: 'Topics' },
   tabResults:     { tr: 'Sonuçlar',                                   en: 'Results' },
   tabModeration:  { tr: 'Yorum denetimi',                            en: 'Comment moderation' },
+  tabSponsors:    { tr: 'Sponsorlar',                                 en: 'Sponsors' },
   commentsOn:     { tr: 'Yorumlar açık',                             en: 'Comments on' },
   commentsAuto:   { tr: 'Otomatik onay',                             en: 'Auto-approve' },
   exportCsv:      { tr: 'CSV indir',                                  en: 'Export CSV' },
@@ -88,6 +89,9 @@ export const STRINGS = {
   // Footer / legal
   privacy:        { tr: 'Gizlilik',                                  en: 'Privacy' },
   terms:          { tr: 'Koşullar',                                  en: 'Terms' },
+  sponsored:      { tr: 'Sponsorlu',                                 en: 'Sponsored' },
+  advertise:      { tr: 'Reklam ver',                                en: 'Advertise' },
+  archive:        { tr: 'Arşiv',                                     en: 'Archive' },
   share:          { tr: 'Paylaş',                                    en: 'Share' },
   signOut:        { tr: 'Çıkış yap',                                 en: 'Sign out' },
 } as const;
