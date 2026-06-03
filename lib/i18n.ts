@@ -40,6 +40,11 @@ export const STRINGS = {
   dailyKicker:    { tr: 'Günün sorusu',                              en: 'Question of the day' },
   feedKicker:     { tr: 'Diğer konular',                             en: 'Other topics' },
   suggestCta:     { tr: 'Bir konu öner',                             en: 'Suggest a topic' },
+  searchPolls:    { tr: 'Anketlerde ara…',                          en: 'Search polls…' },
+  allCategories:  { tr: 'Hepsi',                                     en: 'All' },
+  sortNew:        { tr: 'En yeni',                                   en: 'Newest' },
+  sortTrending:   { tr: 'Popüler',                                   en: 'Trending' },
+  noMatches:      { tr: 'Eşleşen anket yok.',                        en: 'No matching polls.' },
 
   // Vote / reveal
   agree:          { tr: 'Katılıyorum',                               en: 'Agree' },

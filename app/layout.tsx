@@ -7,7 +7,18 @@ export const metadata: Metadata = {
   title: 'Bizce sizce',
   description: 'Kuzey Kıbrıs için sivil anket platformu — Civic polling for North Cyprus.',
   metadataBase: new URL('https://bizcesizce.com'),
-  openGraph: { title: 'Bizce sizce', siteName: 'Bizce sizce', type: 'website' },
+  openGraph: {
+    title: 'Bizce sizce',
+    description: 'Kuzey Kıbrıs ne düşünüyor? Oyla, anında sonuçları gör.',
+    siteName: 'Bizce sizce', type: 'website', url: 'https://bizcesizce.com',
+    images: [{ url: '/api/og', width: 1200, height: 630 }],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Bizce sizce',
+    description: 'Kuzey Kıbrıs ne düşünüyor? Oyla, anında sonuçları gör.',
+    images: ['/api/og'],
+  },
 };
 
 export const viewport = { themeColor: '#0d0d0f', width: 'device-width', initialScale: 1 };

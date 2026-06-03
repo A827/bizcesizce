@@ -28,6 +28,11 @@ export default async function Home() {
 
   const rawList = (topics ?? []) as Topic[];
 
+  // Total vote counts per topic (aggregate) for the "trending" sort.
+  const { data: countRows } = await supabase.rpc('topic_counts');
+  const counts: Record<string, number> = {};
+  for (const r of (countRows ?? []) as { topic_id: string; votes: number }[]) counts[r.topic_id] = r.votes;
+
   const { data: myVotes } = await supabase
     .from('votes').select('topic_id, choice, option_id').eq('user_id', user.id);
   const choiceMap = new Map((myVotes ?? []).map((v) => [v.topic_id, v.choice as ('agree'|'disagree'|null)]));
@@ -77,7 +82,7 @@ export default async function Home() {
     <>
       <Header />
       <main className="shell">
-        <Feed items={enriched} />
+        <Feed items={enriched} counts={counts} />
         <SponsorSlot placement="feed" />
         <Link href="/suggest" className="btn btn-block" style={{ marginTop: 24 }}>
           <SuggestLabel />
