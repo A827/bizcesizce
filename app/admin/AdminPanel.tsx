@@ -5,7 +5,7 @@ import { CATEGORIES, Category, CommentMode } from '@/lib/constants';
 import { Topic } from '@/lib/types';
 import {
   approveSuggestion, rejectSuggestion, createTopic, setDaily, setActive,
-  setCommentsEnabled, setCommentMode,
+  setCommentsEnabled, setCommentMode, setScheduledDate,
   listPendingComments, moderateComment, PendingComment,
   getBreakdown, getTimeseries, BreakdownRow, TimePoint,
 } from '@/lib/admin-actions';
@@ -113,6 +113,13 @@ function TopicsTab({ topics }: { topics: Topic[] }) {
                 onChange={(e) => start(() => { setCommentMode(tp.id, (e.target.checked ? 'auto' : 'manual') as CommentMode); })} />
               {t('commentsAuto')}
             </label>
+          </div>
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginTop: 10, fontSize: 13 }}>
+            <span className="muted">{t('scheduleDaily')}:</span>
+            <input type="date" defaultValue={tp.scheduled_daily_date ?? ''} disabled={pending}
+              onChange={(e) => start(() => { setScheduledDate(tp.id, e.target.value || null); })}
+              style={{ padding: '6px 10px', borderRadius: 8, background: 'var(--surface)',
+                border: '1px solid var(--border)', color: 'var(--text)', font: 'inherit' }} />
           </div>
         </div>
       ))}

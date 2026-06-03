@@ -38,5 +38,14 @@ export const CATEGORIES = [
 export type Category = (typeof CATEGORIES)[number];
 
 export type Choice = 'agree' | 'disagree';
+
+// Privacy / believability thresholds for PUBLIC result displays.
+// The regional breakdown only shows once a topic has enough total votes,
+// and an individual region row only shows once that region has enough —
+// so small samples can't mislead and no one's vote can be inferred.
+export const MIN_BREAKDOWN_TOTAL = 10;
+export const MIN_BUCKET = 5;
+// The daily "you're with the majority / outlier" verdict waits for this many.
+export const MIN_VERDICT_TOTAL = 10;
 export type CommentMode = 'manual' | 'auto';
 export type CommentStatus = 'pending' | 'approved' | 'rejected';

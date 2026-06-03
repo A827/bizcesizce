@@ -4,7 +4,7 @@ import { useLang } from './LanguageProvider';
 import { Comments } from './Comments';
 import { castVote, getResults, TopicResults } from '@/lib/actions';
 import { Topic, MyVote } from '@/lib/types';
-import { Choice } from '@/lib/constants';
+import { Choice, MIN_BREAKDOWN_TOTAL, MIN_BUCKET, MIN_VERDICT_TOTAL } from '@/lib/constants';
 
 function pct(a: number, b: number) {
   const total = a + b;
@@ -66,28 +66,36 @@ export function TopicCard({
 
           <div className="total">{total.toLocaleString(lang === 'tr' ? 'tr-TR' : 'en-US')} {t('totalVotes')}</div>
 
-          {topic.is_daily && total > 0 && (
+          {topic.is_daily && total >= MIN_VERDICT_TOTAL && (
             <div className={`verdict ${userOnMajority ? 'majority' : 'outlier'}`}>
               {userOnMajority ? t('withMajority') : t('outlier')}
             </div>
           )}
 
-          {topic.is_daily && results && results.regions.length > 0 && (
-            <div className="region-table">
-              <div className="kicker">{t('byRegion')}</div>
-              {results.regions.map((r) => {
-                const rTotal = r.agree + r.disagree;
-                const rPct = pct(r.agree, r.disagree);
-                return (
-                  <div className="region-row" key={r.region}>
-                    <span>{r.region}</span>
-                    <span className="mini-bar"><span style={{ width: `${rTotal ? rPct : 0}%` }} /></span>
-                    <span className="mono" style={{ textAlign: 'right' }}>{rTotal ? rPct : 0}%</span>
-                  </div>
-                );
-              })}
-            </div>
-          )}
+          {topic.is_daily && (() => {
+            // Min-sample guard: only show the breakdown once there are enough
+            // total votes, and only show regions that themselves clear MIN_BUCKET.
+            const bigRegions = (results?.regions ?? []).filter((r) => r.agree + r.disagree >= MIN_BUCKET);
+            if (total < MIN_BREAKDOWN_TOTAL || bigRegions.length === 0) {
+              return <div className="total" style={{ marginTop: 12 }}>{t('breakdownSoon')}</div>;
+            }
+            return (
+              <div className="region-table">
+                <div className="kicker">{t('byRegion')}</div>
+                {bigRegions.map((r) => {
+                  const rTotal = r.agree + r.disagree;
+                  const rPct = pct(r.agree, r.disagree);
+                  return (
+                    <div className="region-row" key={r.region}>
+                      <span>{r.region}</span>
+                      <span className="mini-bar"><span style={{ width: `${rPct}%` }} /></span>
+                      <span className="mono" style={{ textAlign: 'right' }}>{rPct}%</span>
+                    </div>
+                  );
+                })}
+              </div>
+            );
+          })()}
 
           <a className="btn btn-ghost btn-block" style={{ marginTop: 16 }}
              href={`/api/share?topic=${topic.id}&choice=${myChoice}&lang=${lang}`} target="_blank" rel="noreferrer">

@@ -9,6 +9,7 @@ export type Topic = {
   is_active: boolean;
   comments_enabled: boolean;
   comment_mode: CommentMode;
+  scheduled_daily_date: string | null;
   created_at: string;
 };
 

@@ -48,6 +48,7 @@ export const STRINGS = {
   withMajority:   { tr: 'Çoğunlukla aynı taraftasın',               en: "You're with the majority" },
   outlier:        { tr: 'Sen bir istisnasın',                        en: "You're an outlier" },
   byRegion:       { tr: 'Bölgelere göre',                            en: 'By region' },
+  breakdownSoon:  { tr: 'Bölge dağılımı yeterli oy toplandığında görünecek.', en: 'Regional breakdown appears once enough votes are in.' },
   alreadyVoted:   { tr: 'Bu konuda zaten oy kullandın',             en: 'You already voted on this' },
 
   // Suggest
@@ -76,6 +77,7 @@ export const STRINGS = {
   exportCsv:      { tr: 'CSV indir',                                  en: 'Export CSV' },
   overTime:       { tr: 'Zamana göre',                               en: 'Over time' },
   noPending:      { tr: 'Bekleyen yorum yok.',                       en: 'No pending comments.' },
+  scheduleDaily:  { tr: 'Günün sorusu tarihi',                       en: 'Schedule as daily on' },
 
   // States
   loading:        { tr: 'Yükleniyor…',                              en: 'Loading…' },

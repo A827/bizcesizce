@@ -53,6 +53,13 @@ export async function setCommentsEnabled(topicId: string, enabled: boolean) {
   revalidatePath('/admin'); revalidatePath('/'); return { ok: true };
 }
 
+// Schedule a topic to be the daily question on a given date (or clear it).
+export async function setScheduledDate(topicId: string, date: string | null) {
+  const sb = await requireAdmin(); if (!sb) return { ok: false };
+  await sb.from('topics').update({ scheduled_daily_date: date || null }).eq('id', topicId);
+  revalidatePath('/admin'); revalidatePath('/'); return { ok: true };
+}
+
 export async function setCommentMode(topicId: string, mode: CommentMode) {
   const sb = await requireAdmin(); if (!sb) return { ok: false };
   await sb.from('topics').update({ comment_mode: mode }).eq('id', topicId);
