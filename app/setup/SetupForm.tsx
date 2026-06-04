@@ -1,13 +1,25 @@
 'use client';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useLang } from '@/components/LanguageProvider';
 import { createClient } from '@/lib/supabase/client';
+import { completeSetup } from '@/lib/actions';
 import {
   REGIONS, AGE_BANDS, GENDERS, EDUCATIONS, EMPLOYMENTS, ORIGINS,
   Region, AgeBand, Gender, Education, Employment, Origin,
 } from '@/lib/constants';
 import { StringKey } from '@/lib/i18n';
+
+const SITE_KEY = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
+
+declare global {
+  interface Window {
+    turnstile?: {
+      render: (el: HTMLElement, opts: Record<string, unknown>) => string;
+      reset: (id?: string) => void;
+    };
+  }
+}
 
 function ChipGroup<T extends string>({
   label, options, value, onPick, mono = false,
@@ -37,8 +49,35 @@ export function SetupForm() {
   const [origin, setOrigin] = useState<Origin | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(false);
+  const [token, setToken] = useState<string | null>(null);
+  const widgetRef = useRef<HTMLDivElement>(null);
+  const renderedRef = useRef(false);
 
-  const ready = region && age && gender && education && employment && origin && !saving;
+  // Load + render the Cloudflare Turnstile widget (only if a site key exists).
+  useEffect(() => {
+    if (!SITE_KEY || renderedRef.current) return;
+    function render() {
+      if (!widgetRef.current || !window.turnstile || renderedRef.current) return;
+      renderedRef.current = true;
+      window.turnstile.render(widgetRef.current, {
+        sitekey: SITE_KEY,
+        theme: 'dark',
+        callback: (tok: string) => setToken(tok),
+        'expired-callback': () => setToken(null),
+        'error-callback': () => setToken(null),
+      });
+    }
+    if (window.turnstile) { render(); return; }
+    const s = document.createElement('script');
+    s.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js';
+    s.async = true; s.defer = true;
+    s.onload = render;
+    document.head.appendChild(s);
+  }, []);
+
+  // If a site key is configured, require a completed human check.
+  const humanOk = !SITE_KEY || !!token;
+  const ready = region && age && gender && education && employment && origin && humanOk && !saving;
 
   async function save() {
     if (!ready) return;
@@ -46,10 +85,16 @@ export function SetupForm() {
     const supabase = createClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) { router.push('/login'); return; }
-    const { error } = await supabase.from('profiles').update({
-      region, age_band: age, gender, education, employment, origin,
-    }).eq('user_id', user.id);
-    if (error) { setError(true); setSaving(false); return; }
+
+    const res = await completeSetup(
+      { region: region!, age_band: age!, gender: gender!, education: education!, employment: employment!, origin: origin! },
+      token,
+    );
+    if (!res.ok) {
+      setError(true); setSaving(false);
+      if (SITE_KEY) { setToken(null); window.turnstile?.reset(); }
+      return;
+    }
     router.push('/');
     router.refresh();
   }
@@ -67,6 +112,8 @@ export function SetupForm() {
       <ChipGroup label={L('chooseEducation')} options={EDUCATIONS} value={education} onPick={setEducation} />
       <ChipGroup label={L('chooseEmployment')} options={EMPLOYMENTS} value={employment} onPick={setEmployment} />
       <ChipGroup label={L('chooseOrigin')} options={ORIGINS} value={origin} onPick={setOrigin} />
+
+      {SITE_KEY && <div ref={widgetRef} style={{ marginBottom: 16, minHeight: 65 }} />}
 
       {error && <p className="error">{t('errorGeneric')}</p>}
 

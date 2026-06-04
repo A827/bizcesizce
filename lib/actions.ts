@@ -3,10 +3,11 @@
 // so they can safely enforce rules and read the signed-in user.
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
-import { Choice } from '@/lib/constants';
+import { Choice, Region, AgeBand, Gender, Education, Employment, Origin } from '@/lib/constants';
 import { Comment, OptionResult, Sponsor, SponsorPlacement } from '@/lib/types';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { moderateText } from '@/lib/moderation';
+import { verifyTurnstile } from '@/lib/turnstile';
 
 export type RegionResult = { region: string; agree: number; disagree: number };
 export type TopicResults = { total_agree: number; total_disagree: number; regions: RegionResult[] };
@@ -142,6 +143,31 @@ export async function postComment(topicId: string, body: string) {
     }
   }
 
+  revalidatePath('/');
+  return { ok: true as const };
+}
+
+// --- Complete first-run profile setup (gated by Turnstile human check) ---
+export async function completeSetup(
+  demo: {
+    region: Region; age_band: AgeBand; gender: Gender;
+    education: Education; employment: Employment; origin: Origin;
+  },
+  turnstileToken: string | null,
+) {
+  const human = await verifyTurnstile(turnstileToken);
+  if (!human) return { ok: false, reason: 'not_human' as const };
+
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { ok: false, reason: 'not_signed_in' as const };
+
+  const { error } = await supabase.from('profiles').update({
+    region: demo.region, age_band: demo.age_band, gender: demo.gender,
+    education: demo.education, employment: demo.employment, origin: demo.origin,
+  }).eq('user_id', user.id);
+
+  if (error) return { ok: false, reason: 'error' as const };
   revalidatePath('/');
   return { ok: true as const };
 }
