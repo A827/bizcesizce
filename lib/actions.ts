@@ -111,6 +111,29 @@ export async function getSponsors(placement: SponsorPlacement): Promise<Sponsor[
   return (data ?? []) as Sponsor[];
 }
 
+// Log an application error (client or server) for the admin Errors tab.
+export async function logError(input: { message?: string; stack?: string; path?: string; kind?: string }) {
+  try {
+    const admin = createAdminClient();
+    await admin.from('app_errors').insert({
+      message: (input.message ?? '').slice(0, 500),
+      stack: (input.stack ?? '').slice(0, 4000),
+      path: (input.path ?? '').slice(0, 300),
+      kind: input.kind === 'server' ? 'server' : 'client',
+    });
+  } catch { /* never let logging throw */ }
+}
+
+// Public site announcement banner (returns the active one, if any).
+export type Announcement = { tr: string; en: string } | null;
+export async function getAnnouncement(): Promise<Announcement> {
+  const supabase = await createClient();
+  const { data } = await supabase.from('site_settings')
+    .select('announcement_tr, announcement_en, announcement_active').eq('id', 1).single();
+  if (!data?.announcement_active) return null;
+  return { tr: data.announcement_tr ?? '', en: data.announcement_en ?? '' };
+}
+
 // Count a sponsor view or click (aggregate only; no cookies / no per-user data).
 export async function trackSponsor(sponsorId: string, kind: 'impression' | 'click') {
   const supabase = await createClient();

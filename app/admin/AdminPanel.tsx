@@ -13,12 +13,15 @@ import {
   getOptionBreakdown, OptionBreakdownRow,
   getOverview, Overview, listAudit, AuditRow,
   getPeople, PersonRow, setBanned,
+  getErrors, clearErrors, AppError,
+  getAnnouncementSettings, setAnnouncement,
+  deleteTopic, getTopicCounts,
 } from '@/lib/admin-actions';
 import { getOptionResults } from '@/lib/actions';
 import { Sponsor, SponsorPlacement, OptionResult } from '@/lib/types';
 
 type Suggestion = { id: string; question_tr: string; question_en: string | null };
-type Tab = 'overview' | 'suggestions' | 'topics' | 'results' | 'moderation' | 'sponsors' | 'people';
+type Tab = 'overview' | 'suggestions' | 'topics' | 'results' | 'moderation' | 'sponsors' | 'people' | 'errors';
 
 const inputStyle: React.CSSProperties = {
   width: '100%', padding: 12, borderRadius: 10, background: 'var(--surface)',
@@ -50,6 +53,7 @@ export function AdminPanel({ topics, suggestions }: { topics: Topic[]; suggestio
         <TabBtn id="moderation" label={t('tabModeration')} />
         <TabBtn id="sponsors" label={t('tabSponsors')} />
         <TabBtn id="people" label={t('tabPeople')} />
+        <TabBtn id="errors" label={t('tabErrors')} />
       </div>
 
       {tab === 'overview' && <OverviewTab />}
@@ -59,6 +63,39 @@ export function AdminPanel({ topics, suggestions }: { topics: Topic[]; suggestio
       {tab === 'moderation' && <ModerationTab topics={topics} />}
       {tab === 'sponsors' && <SponsorsTab />}
       {tab === 'people' && <PeopleTab />}
+      {tab === 'errors' && <ErrorsTab />}
+    </>
+  );
+}
+
+function ErrorsTab() {
+  const [rows, setRows] = useState<AppError[] | null>(null);
+  const [busy, setBusy] = useState(false);
+  useEffect(() => { getErrors().then(setRows); }, []);
+  if (rows === null) return <div className="skeleton" style={{ height: 70, marginTop: 12 }} />;
+  return (
+    <>
+      <div style={{ display: 'flex', alignItems: 'center', margin: '14px 0 8px' }}>
+        <h2 className="kicker" style={{ margin: 0 }}>{rows.length} hata / errors</h2>
+        <span style={{ flex: 1 }} />
+        {rows.length > 0 && (
+          <button className="btn" style={{ padding: '6px 12px', minHeight: 0 }} disabled={busy}
+            onClick={async () => { setBusy(true); await clearErrors(); setRows(await getErrors()); setBusy(false); }}>
+            Temizle
+          </button>
+        )}
+      </div>
+      {rows.length === 0 ? <p className="muted">Hata kaydı yok 🎉 · No errors logged.</p> :
+        rows.map((e) => (
+          <div className="card" key={e.id} style={{ padding: 14 }}>
+            <div style={{ fontSize: 14, color: 'var(--coral)' }}>{e.message || '—'}</div>
+            <div className="mono muted" style={{ fontSize: 11, marginTop: 4 }}>
+              {e.kind} · {e.path || '—'} · {new Date(e.created_at).toLocaleString()}
+            </div>
+            {e.stack && <pre className="mono" style={{ fontSize: 10, color: 'var(--muted)', whiteSpace: 'pre-wrap',
+              marginTop: 8, maxHeight: 120, overflow: 'auto' }}>{e.stack}</pre>}
+          </div>
+        ))}
     </>
   );
 }
@@ -67,6 +104,7 @@ function PeopleTab() {
   const { t } = useLang();
   const [rows, setRows] = useState<PersonRow[] | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
+  const [q, setQ] = useState('');
   useEffect(() => { getPeople().then(setRows); }, []);
 
   async function toggleBan(p: PersonRow) {
@@ -90,14 +128,23 @@ function PeopleTab() {
 
   if (rows === null) return <div className="skeleton" style={{ height: 80, marginTop: 12 }} />;
 
+  const bannedCount = rows.filter((r) => r.is_banned).length;
+  const needle = q.trim().toLowerCase();
+  const filtered = needle
+    ? rows.filter((r) => [r.first_name, r.last_name, r.region, r.phone, r.employment]
+        .some((v) => (v ?? '').toLowerCase().includes(needle)))
+    : rows;
+
   return (
     <>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12, margin: '14px 0 8px' }}>
-        <h2 className="kicker" style={{ margin: 0 }}>{rows.length} {t('tabPeople')}</h2>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, margin: '14px 0 8px', flexWrap: 'wrap' }}>
+        <h2 className="kicker" style={{ margin: 0 }}>{rows.length} {t('tabPeople')} · {bannedCount} yasaklı</h2>
         <span style={{ flex: 1 }} />
         <button className="btn" style={{ padding: '8px 14px', minHeight: 0 }}
           disabled={!rows.length} onClick={exportCsv}>{t('exportCsv')}</button>
       </div>
+      <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Ara: ad, bölge, telefon…"
+        style={{ ...inputStyle, marginBottom: 8 }} />
       <p className="muted" style={{ fontSize: 12, marginBottom: 12 }}>
         Yalnızca sen görebilirsin · Visible to admins only.
       </p>
@@ -111,7 +158,7 @@ function PeopleTab() {
             </tr>
           </thead>
           <tbody>
-            {rows.map((r) => (
+            {filtered.map((r) => (
               <tr key={r.user_id} style={{ opacity: r.is_banned ? 0.55 : 1 }}>
                 <td style={{ padding: '6px 8px', borderBottom: '1px solid var(--border)', whiteSpace: 'nowrap' }}>
                   {r.is_admin
@@ -219,6 +266,8 @@ function OverviewTab() {
           <Stat label="Kullanıcı" value={ov.total_users} />
         </div>
       )}
+      <AnnouncementEditor />
+
       <h2 className="kicker">Son işlemler</h2>
       {audit === null ? <div className="skeleton" style={{ height: 60 }} /> :
         audit.length === 0 ? <p className="muted">—</p> :
@@ -231,6 +280,38 @@ function OverviewTab() {
           ))}
         </div>}
     </>
+  );
+}
+
+function AnnouncementEditor() {
+  const [tr, setTr] = useState(''); const [en, setEn] = useState('');
+  const [active, setActive] = useState(false);
+  const [loaded, setLoaded] = useState(false);
+  const [pending, start] = useTransition();
+  const [saved, setSaved] = useState(false);
+  useEffect(() => {
+    getAnnouncementSettings().then((s) => {
+      if (s) { setTr(s.announcement_tr ?? ''); setEn(s.announcement_en ?? ''); setActive(s.announcement_active); }
+      setLoaded(true);
+    });
+  }, []);
+  if (!loaded) return <div className="skeleton" style={{ height: 60, marginBottom: 16 }} />;
+  return (
+    <div style={{ marginBottom: 20 }}>
+      <h2 className="kicker">Duyuru bandı · Announcement</h2>
+      <div className="card">
+        <input style={inputStyle} placeholder="Duyuru (TR)" value={tr} onChange={(e) => setTr(e.target.value)} />
+        <input style={inputStyle} placeholder="Announcement (EN)" value={en} onChange={(e) => setEn(e.target.value)} />
+        <label style={{ display: 'flex', alignItems: 'center', gap: 8, margin: '6px 0 12px', fontSize: 14 }}>
+          <input type="checkbox" checked={active} onChange={(e) => setActive(e.target.checked)} />
+          Yayında (tüm kullanıcılara göster)
+        </label>
+        <button className="btn btn-accent btn-block" disabled={pending}
+          onClick={() => start(async () => { await setAnnouncement({ tr, en, active }); setSaved(true); setTimeout(() => setSaved(false), 2500); })}>
+          {pending ? '…' : saved ? 'Kaydedildi ✓' : 'Kaydet'}
+        </button>
+      </div>
+    </div>
   );
 }
 
@@ -257,6 +338,9 @@ function SuggestionsTab({ suggestions }: { suggestions: Suggestion[] }) {
 function TopicsTab({ topics }: { topics: Topic[] }) {
   const { t } = useLang();
   const [pending, start] = useTransition();
+  const [counts, setCounts] = useState<Record<string, number>>({});
+  const [confirmDel, setConfirmDel] = useState<string | null>(null);
+  useEffect(() => { getTopicCounts().then(setCounts); }, []);
   const [qtr, setQtr] = useState(''); const [qen, setQen] = useState(''); const [cat, setCat] = useState<Category>('Other');
   const [multi, setMulti] = useState(false);
   const [opts, setOpts] = useState<{ tr: string; en: string }[]>([{ tr: '', en: '' }, { tr: '', en: '' }]);
@@ -314,15 +398,27 @@ function TopicsTab({ topics }: { topics: Topic[] }) {
 
       {topics.map((tp) => (
         <div className="card" key={tp.id}>
-          <div className="serif" style={{ fontSize: 17, marginBottom: 10 }}>
+          <div className="serif" style={{ fontSize: 17, marginBottom: 4 }}>
             {tp.is_daily && <span className="mono" style={{ color: 'var(--accent)', marginRight: 8 }}>★</span>}
             {tp.question_tr}
+          </div>
+          <div className="mono muted" style={{ fontSize: 11, marginBottom: 10 }}>
+            {(counts[tp.id] ?? 0)} oy · {tp.is_active ? 'aktif' : 'gizli'}
           </div>
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 10 }}>
             <button className="btn" style={{ minHeight: 0, padding: '8px 12px' }} disabled={pending || tp.is_daily}
               onClick={() => start(() => { setDaily(tp.id); })}>{t('setDaily')}</button>
             <button className="btn" style={{ minHeight: 0, padding: '8px 12px' }} disabled={pending}
               onClick={() => start(() => { setActive(tp.id, !tp.is_active); })}>{tp.is_active ? t('deactivate') : 'Aktif et'}</button>
+            {confirmDel === tp.id ? (
+              <button className="btn" style={{ minHeight: 0, padding: '8px 12px', background: 'var(--coral)', color: '#fff', borderColor: 'var(--coral)' }}
+                disabled={pending} onClick={() => start(async () => { await deleteTopic(tp.id); setConfirmDel(null); })}>
+                Kalıcı sil — emin misin?
+              </button>
+            ) : (
+              <button className="btn" style={{ minHeight: 0, padding: '8px 12px', color: 'var(--coral)', borderColor: 'var(--coral)' }}
+                disabled={pending} onClick={() => setConfirmDel(tp.id)}>Sil</button>
+            )}
           </div>
           <div style={{ display: 'flex', gap: 14, alignItems: 'center', flexWrap: 'wrap', fontSize: 14 }}>
             <label style={{ display: 'flex', gap: 6, alignItems: 'center', cursor: 'pointer' }}>

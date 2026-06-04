@@ -146,6 +146,7 @@ export const STRINGS = {
   tabSponsors:    { tr: 'Sponsorlar',                                 en: 'Sponsors' },
   tabOverview:    { tr: 'Genel bakış',                                en: 'Overview' },
   tabPeople:      { tr: 'Kişiler',                                    en: 'People' },
+  tabErrors:      { tr: 'Hatalar',                                    en: 'Errors' },
   active:         { tr: 'Aktif',                                      en: 'Active' },
   banned:         { tr: 'Yasaklı',                                    en: 'Banned' },
   ban:            { tr: 'Yasakla',                                    en: 'Ban' },
@@ -172,6 +173,7 @@ export const STRINGS = {
   sponsored:      { tr: 'Sponsorlu',                                 en: 'Sponsored' },
   advertise:      { tr: 'Reklam ver',                                en: 'Advertise' },
   archive:        { tr: 'Arşiv',                                     en: 'Archive' },
+  howItWorks:     { tr: 'Nasıl çalışır',                             en: 'How it works' },
   share:          { tr: 'Paylaş',                                    en: 'Share' },
   signOut:        { tr: 'Çıkış yap',                                 en: 'Sign out' },
 } as const;

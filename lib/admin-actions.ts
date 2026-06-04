@@ -250,3 +250,55 @@ export async function setBanned(userId: string, banned: boolean) {
   revalidatePath('/admin');
   return { ok: true as const };
 }
+
+// --- Error log (admin Errors tab) ------------------------------------
+export type AppError = { id: string; message: string | null; stack: string | null; path: string | null; kind: string | null; created_at: string };
+export async function getErrors(): Promise<AppError[]> {
+  const sb = await requireAdmin(); if (!sb) return [];
+  const { data } = await sb.from('app_errors').select('*').order('created_at', { ascending: false }).limit(100);
+  return (data ?? []) as AppError[];
+}
+export async function clearErrors() {
+  const writer = await adminWriter(); if (!writer) return { ok: false as const };
+  await writer.from('app_errors').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+  revalidatePath('/admin');
+  return { ok: true as const };
+}
+
+// --- Site announcement banner ----------------------------------------
+export type AnnouncementSettings = { announcement_tr: string | null; announcement_en: string | null; announcement_active: boolean };
+export async function getAnnouncementSettings(): Promise<AnnouncementSettings | null> {
+  const sb = await requireAdmin(); if (!sb) return null;
+  const { data } = await sb.from('site_settings').select('announcement_tr, announcement_en, announcement_active').eq('id', 1).single();
+  return (data ?? null) as AnnouncementSettings | null;
+}
+export async function setAnnouncement(input: { tr: string; en: string; active: boolean }) {
+  const writer = await adminWriter(); if (!writer) return { ok: false as const };
+  await writer.from('site_settings').update({
+    announcement_tr: input.tr.trim() || null,
+    announcement_en: input.en.trim() || null,
+    announcement_active: input.active,
+    updated_at: new Date().toISOString(),
+  }).eq('id', 1);
+  await logAudit('set_announcement', input.active ? 'on' : 'off');
+  revalidatePath('/'); revalidatePath('/admin');
+  return { ok: true as const };
+}
+
+// --- Delete a topic (and its votes/comments via cascade) -------------
+export async function deleteTopic(id: string) {
+  const writer = await adminWriter(); if (!writer) return { ok: false as const };
+  await writer.from('topics').delete().eq('id', id);
+  await logAudit('delete_topic', id);
+  revalidatePath('/'); revalidatePath('/admin');
+  return { ok: true as const };
+}
+
+// --- Vote counts per topic (for the admin topic list) ----------------
+export async function getTopicCounts(): Promise<Record<string, number>> {
+  const sb = await requireAdmin(); if (!sb) return {};
+  const { data } = await sb.rpc('topic_counts');
+  const out: Record<string, number> = {};
+  for (const r of (data ?? []) as { topic_id: string; votes: number }[]) out[r.topic_id] = r.votes;
+  return out;
+}

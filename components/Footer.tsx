@@ -9,6 +9,7 @@ export function Footer() {
     <>
       <SponsorSlot placement="footer" />
       <footer className="footer">
+        <Link href="/nasil-calisir">{t('howItWorks')}</Link>
         <Link href="/archive">{t('archive')}</Link>
         <Link href="/advertise">{t('advertise')}</Link>
         <Link href="/privacy">{t('privacy')}</Link>

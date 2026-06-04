@@ -9,6 +9,7 @@ import { SponsorSlot } from '@/components/SponsorSlot';
 import { SuggestLabel } from '@/components/SuggestLabel';
 import { SuspendedNotice } from '@/components/SuspendedNotice';
 import { PublicLanding } from '@/components/PublicLanding';
+import { AnnouncementBanner } from '@/components/AnnouncementBanner';
 import { Topic, TopicOption } from '@/lib/types';
 
 export const dynamic = 'force-dynamic';
@@ -31,6 +32,7 @@ export default async function Home() {
       <>
         <Header />
         <main className="shell">
+          <AnnouncementBanner />
           <PublicLanding topics={(pubTopics ?? []) as Topic[]} counts={pc} />
           <Footer />
         </main>
@@ -114,6 +116,7 @@ export default async function Home() {
     <>
       <Header />
       <main className="shell">
+        <AnnouncementBanner />
         <Feed items={enriched} counts={counts} />
         <SponsorSlot placement="feed" />
         <Link href="/suggest" className="btn btn-block" style={{ marginTop: 24 }}>
