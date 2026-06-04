@@ -8,6 +8,7 @@ import { Feed } from '@/components/Feed';
 import { SponsorSlot } from '@/components/SponsorSlot';
 import { SuggestLabel } from '@/components/SuggestLabel';
 import { SuspendedNotice } from '@/components/SuspendedNotice';
+import { PublicLanding } from '@/components/PublicLanding';
 import { Topic, TopicOption } from '@/lib/types';
 
 export const dynamic = 'force-dynamic';
@@ -15,7 +16,27 @@ export const dynamic = 'force-dynamic';
 export default async function Home() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect('/login');
+
+  // Logged-out visitors get a public, indexable landing page (not a redirect)
+  // so search engines and shared links see real content.
+  if (!user) {
+    const { data: pubTopics } = await supabase
+      .from('topics').select('*').eq('is_active', true)
+      .order('is_daily', { ascending: false })
+      .order('created_at', { ascending: false });
+    const { data: pubCounts } = await supabase.rpc('topic_counts');
+    const pc: Record<string, number> = {};
+    for (const r of (pubCounts ?? []) as { topic_id: string; votes: number }[]) pc[r.topic_id] = r.votes;
+    return (
+      <>
+        <Header />
+        <main className="shell">
+          <PublicLanding topics={(pubTopics ?? []) as Topic[]} counts={pc} />
+          <Footer />
+        </main>
+      </>
+    );
+  }
 
   // Voting is blocked until the profile is complete.
   const { data: profile } = await supabase

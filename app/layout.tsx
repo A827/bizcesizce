@@ -23,9 +23,11 @@ const splineMono = Spline_Sans_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'Bizce sizce',
-  description: 'Kuzey Kıbrıs için sivil anket platformu — Civic polling for North Cyprus.',
+  title: { default: 'Bizce sizce — Kuzey Kıbrıs ne düşünüyor?', template: '%s · Bizce sizce' },
+  description: 'Kuzey Kıbrıs için sivil anket platformu. Oyla, anında sonuçları gör, paylaş. Civic polling for North Cyprus.',
   metadataBase: new URL('https://bizcesizce.com'),
+  alternates: { canonical: '/' },
+  keywords: ['Kuzey Kıbrıs anket', 'KKTC anket', 'kamuoyu', 'oylama', 'North Cyprus poll', 'Bizce sizce'],
   openGraph: {
     title: 'Bizce sizce',
     description: 'Kuzey Kıbrıs ne düşünüyor? Oyla, anında sonuçları gör.',
@@ -49,6 +51,18 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="tr" className={`${fraunces.variable} ${spline.variable} ${splineMono.variable}`}>
       <body>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify({
+            '@context': 'https://schema.org',
+            '@type': 'WebSite',
+            name: 'Bizce sizce',
+            url: 'https://bizcesizce.com',
+            description: 'Kuzey Kıbrıs için sivil anket platformu.',
+            inLanguage: ['tr', 'en'],
+            publisher: { '@type': 'Organization', name: 'Bizce sizce', url: 'https://bizcesizce.com' },
+          }) }}
+        />
         <LanguageProvider>{children}</LanguageProvider>
         <SetupGuard />
         <Analytics />
