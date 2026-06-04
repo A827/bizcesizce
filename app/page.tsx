@@ -7,6 +7,7 @@ import { Footer } from '@/components/Footer';
 import { Feed } from '@/components/Feed';
 import { SponsorSlot } from '@/components/SponsorSlot';
 import { SuggestLabel } from '@/components/SuggestLabel';
+import { SuspendedNotice } from '@/components/SuspendedNotice';
 import { Topic, TopicOption } from '@/lib/types';
 
 export const dynamic = 'force-dynamic';
@@ -18,8 +19,18 @@ export default async function Home() {
 
   // Voting is blocked until the profile is complete.
   const { data: profile } = await supabase
-    .from('profiles').select('region, age_band').eq('user_id', user.id).single();
+    .from('profiles').select('region, age_band, is_banned').eq('user_id', user.id).single();
   if (!profile?.region || !profile?.age_band) redirect('/setup');
+
+  // Suspended accounts can sign in but see a notice instead of the feed.
+  if (profile.is_banned) {
+    return (
+      <>
+        <Header />
+        <main className="shell"><SuspendedNotice /></main>
+      </>
+    );
+  }
 
   const { data: topics } = await supabase
     .from('topics').select('*').eq('is_active', true)

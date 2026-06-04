@@ -12,7 +12,7 @@ import {
   listSponsors, createSponsor, setSponsorActive, deleteSponsor,
   getOptionBreakdown, OptionBreakdownRow,
   getOverview, Overview, listAudit, AuditRow,
-  getPeople, PersonRow,
+  getPeople, PersonRow, setBanned,
 } from '@/lib/admin-actions';
 import { getOptionResults } from '@/lib/actions';
 import { Sponsor, SponsorPlacement, OptionResult } from '@/lib/types';
@@ -66,7 +66,15 @@ export function AdminPanel({ topics, suggestions }: { topics: Topic[]; suggestio
 function PeopleTab() {
   const { t } = useLang();
   const [rows, setRows] = useState<PersonRow[] | null>(null);
+  const [busy, setBusy] = useState<string | null>(null);
   useEffect(() => { getPeople().then(setRows); }, []);
+
+  async function toggleBan(p: PersonRow) {
+    setBusy(p.user_id);
+    await setBanned(p.user_id, !p.is_banned);
+    setRows(await getPeople());
+    setBusy(null);
+  }
 
   function exportCsv() {
     if (!rows) return;
@@ -97,20 +105,37 @@ function PeopleTab() {
         <table style={{ borderCollapse: 'collapse', width: '100%', fontSize: 12 }}>
           <thead>
             <tr style={{ textAlign: 'left', color: 'var(--muted)' }}>
-              {['Ad', 'Soyad', 'Doğum', 'Bölge', 'Cinsiyet', 'Medeni', 'İş', 'Eğitim', 'Köken', 'Telefon'].map((h) => (
-                <th key={h} style={{ padding: '6px 8px', borderBottom: '1px solid var(--border)', whiteSpace: 'nowrap' }}>{h}</th>
+              {['Durum', 'Ad', 'Soyad', 'Doğum', 'Bölge', 'Cinsiyet', 'Medeni', 'İş', 'Eğitim', 'Köken', 'Telefon', ''].map((h, i) => (
+                <th key={i} style={{ padding: '6px 8px', borderBottom: '1px solid var(--border)', whiteSpace: 'nowrap' }}>{h}</th>
               ))}
             </tr>
           </thead>
           <tbody>
-            {rows.map((r, idx) => (
-              <tr key={idx}>
+            {rows.map((r) => (
+              <tr key={r.user_id} style={{ opacity: r.is_banned ? 0.55 : 1 }}>
+                <td style={{ padding: '6px 8px', borderBottom: '1px solid var(--border)', whiteSpace: 'nowrap' }}>
+                  {r.is_admin
+                    ? <span style={{ color: 'var(--accent)' }}>admin</span>
+                    : r.is_banned
+                      ? <span style={{ color: 'var(--coral)' }}>● {t('banned')}</span>
+                      : <span className="muted">{t('active')}</span>}
+                </td>
                 {[r.first_name, r.last_name, r.date_of_birth, r.region, r.gender,
                   r.marital_status, r.employment, r.education, r.origin, r.phone].map((v, j) => (
                   <td key={j} style={{ padding: '6px 8px', borderBottom: '1px solid var(--border)', whiteSpace: 'nowrap' }}>
                     {v ?? '—'}
                   </td>
                 ))}
+                <td style={{ padding: '6px 8px', borderBottom: '1px solid var(--border)', whiteSpace: 'nowrap' }}>
+                  {!r.is_admin && (
+                    <button className="btn" style={{ padding: '4px 10px', minHeight: 0, fontSize: 12,
+                      borderColor: r.is_banned ? 'var(--border)' : 'var(--coral)',
+                      color: r.is_banned ? 'var(--text)' : 'var(--coral)' }}
+                      disabled={busy === r.user_id} onClick={() => toggleBan(r)}>
+                      {busy === r.user_id ? '…' : r.is_banned ? t('unban') : t('ban')}
+                    </button>
+                  )}
+                </td>
               </tr>
             ))}
           </tbody>
