@@ -67,6 +67,7 @@ export function Comments({ topicId, canComment }: { topicId: string; canComment:
             <div key={c.id} style={{ padding: '10px 0', borderBottom: '1px solid var(--border)' }}>
               <div style={{ fontSize: 14 }}>{c.body}</div>
               <div className="mono" style={{ fontSize: 11, color: 'var(--muted)', marginTop: 4 }}>
+                {c.author_name && <strong style={{ color: 'var(--text)' }}>{c.author_name} · </strong>}
                 {c.region ?? '—'} · {new Date(c.created_at).toLocaleDateString(lang === 'tr' ? 'tr-TR' : 'en-US')}
               </div>
             </div>

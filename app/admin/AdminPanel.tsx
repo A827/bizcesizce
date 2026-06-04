@@ -12,12 +12,13 @@ import {
   listSponsors, createSponsor, setSponsorActive, deleteSponsor,
   getOptionBreakdown, OptionBreakdownRow,
   getOverview, Overview, listAudit, AuditRow,
+  getPeople, PersonRow,
 } from '@/lib/admin-actions';
 import { getOptionResults } from '@/lib/actions';
 import { Sponsor, SponsorPlacement, OptionResult } from '@/lib/types';
 
 type Suggestion = { id: string; question_tr: string; question_en: string | null };
-type Tab = 'overview' | 'suggestions' | 'topics' | 'results' | 'moderation' | 'sponsors';
+type Tab = 'overview' | 'suggestions' | 'topics' | 'results' | 'moderation' | 'sponsors' | 'people';
 
 const inputStyle: React.CSSProperties = {
   width: '100%', padding: 12, borderRadius: 10, background: 'var(--surface)',
@@ -48,6 +49,7 @@ export function AdminPanel({ topics, suggestions }: { topics: Topic[]; suggestio
         <TabBtn id="results" label={t('tabResults')} />
         <TabBtn id="moderation" label={t('tabModeration')} />
         <TabBtn id="sponsors" label={t('tabSponsors')} />
+        <TabBtn id="people" label={t('tabPeople')} />
       </div>
 
       {tab === 'overview' && <OverviewTab />}
@@ -56,6 +58,64 @@ export function AdminPanel({ topics, suggestions }: { topics: Topic[]; suggestio
       {tab === 'results' && <ResultsTab topics={topics} />}
       {tab === 'moderation' && <ModerationTab topics={topics} />}
       {tab === 'sponsors' && <SponsorsTab />}
+      {tab === 'people' && <PeopleTab />}
+    </>
+  );
+}
+
+function PeopleTab() {
+  const { t } = useLang();
+  const [rows, setRows] = useState<PersonRow[] | null>(null);
+  useEffect(() => { getPeople().then(setRows); }, []);
+
+  function exportCsv() {
+    if (!rows) return;
+    const cols: (keyof PersonRow)[] = ['first_name', 'last_name', 'date_of_birth', 'region',
+      'gender', 'marital_status', 'employment', 'education', 'origin', 'phone', 'created_at'];
+    const esc = (v: unknown) => `"${String(v ?? '').replace(/"/g, '""')}"`;
+    const csv = [cols.join(','), ...rows.map((r) => cols.map((c) => esc(r[c])).join(','))].join('\n');
+    const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
+    const link = document.createElement('a');
+    link.href = url; link.download = 'bizcesizce-people.csv'; link.click();
+    URL.revokeObjectURL(url);
+  }
+
+  if (rows === null) return <div className="skeleton" style={{ height: 80, marginTop: 12 }} />;
+
+  return (
+    <>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, margin: '14px 0 8px' }}>
+        <h2 className="kicker" style={{ margin: 0 }}>{rows.length} {t('tabPeople')}</h2>
+        <span style={{ flex: 1 }} />
+        <button className="btn" style={{ padding: '8px 14px', minHeight: 0 }}
+          disabled={!rows.length} onClick={exportCsv}>{t('exportCsv')}</button>
+      </div>
+      <p className="muted" style={{ fontSize: 12, marginBottom: 12 }}>
+        Yalnızca sen görebilirsin · Visible to admins only.
+      </p>
+      <div style={{ overflowX: 'auto' }}>
+        <table style={{ borderCollapse: 'collapse', width: '100%', fontSize: 12 }}>
+          <thead>
+            <tr style={{ textAlign: 'left', color: 'var(--muted)' }}>
+              {['Ad', 'Soyad', 'Doğum', 'Bölge', 'Cinsiyet', 'Medeni', 'İş', 'Eğitim', 'Köken', 'Telefon'].map((h) => (
+                <th key={h} style={{ padding: '6px 8px', borderBottom: '1px solid var(--border)', whiteSpace: 'nowrap' }}>{h}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((r, idx) => (
+              <tr key={idx}>
+                {[r.first_name, r.last_name, r.date_of_birth, r.region, r.gender,
+                  r.marital_status, r.employment, r.education, r.origin, r.phone].map((v, j) => (
+                  <td key={j} style={{ padding: '6px 8px', borderBottom: '1px solid var(--border)', whiteSpace: 'nowrap' }}>
+                    {v ?? '—'}
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </>
   );
 }

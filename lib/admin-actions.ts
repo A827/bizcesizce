@@ -222,3 +222,19 @@ export async function listAudit(): Promise<AuditRow[]> {
   const { data } = await sb.from('admin_audit').select('*').order('created_at', { ascending: false }).limit(100);
   return (data ?? []) as AuditRow[];
 }
+
+// --- People: collected profiles (admin-only, via service role) --------
+export type PersonRow = {
+  first_name: string | null; last_name: string | null; date_of_birth: string | null;
+  region: string | null; gender: string | null; marital_status: string | null;
+  employment: string | null; education: string | null; origin: string | null;
+  phone: string | null; created_at: string;
+};
+export async function getPeople(): Promise<PersonRow[]> {
+  const writer = await adminWriter(); if (!writer) return [];
+  const { data } = await writer.from('profiles')
+    .select('first_name, last_name, date_of_birth, region, gender, marital_status, employment, education, origin, phone, created_at')
+    .order('created_at', { ascending: false })
+    .limit(2000);
+  return (data ?? []) as PersonRow[];
+}

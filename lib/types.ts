@@ -42,5 +42,6 @@ export type Comment = {
   body: string;
   status: CommentStatus;
   region: string | null;
+  author_name: string | null;
   created_at: string;
 };

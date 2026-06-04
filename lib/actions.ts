@@ -3,7 +3,7 @@
 // so they can safely enforce rules and read the signed-in user.
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
-import { Choice, Region, AgeBand, Gender, Education, Employment, Origin } from '@/lib/constants';
+import { Choice, Region, AgeBand, Gender, Education, Employment, Origin, MaritalStatus, ageBandFromDob } from '@/lib/constants';
 import { Comment, OptionResult, Sponsor, SponsorPlacement } from '@/lib/types';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { moderateText } from '@/lib/moderation';
@@ -94,7 +94,7 @@ export async function getComments(topicId: string): Promise<Comment[]> {
   const supabase = await createClient();
   const { data } = await supabase
     .from('comments')
-    .select('id, topic_id, body, status, region, created_at')
+    .select('id, topic_id, body, status, region, author_name, created_at')
     .eq('topic_id', topicId)
     .order('created_at', { ascending: false })
     .limit(100);
@@ -148,23 +148,52 @@ export async function postComment(topicId: string, body: string) {
 }
 
 // --- Complete first-run profile setup (gated by Turnstile human check) ---
-export async function completeSetup(
-  demo: {
-    region: Region; age_band: AgeBand; gender: Gender;
-    education: Education; employment: Employment; origin: Origin;
-  },
-  turnstileToken: string | null,
-) {
+// Core fields (region, date_of_birth, gender) are required; everything else
+// is optional. age_band is derived from the birth date for vote breakdowns.
+export type SetupInput = {
+  region: Region;
+  date_of_birth: string;        // ISO yyyy-mm-dd
+  gender: Gender;
+  first_name?: string | null;
+  last_name?: string | null;
+  marital_status?: MaritalStatus | null;
+  employment?: Employment | null;   // "job"
+  education?: Education | null;
+  origin?: Origin | null;
+  phone?: string | null;
+};
+
+export async function completeSetup(input: SetupInput, turnstileToken: string | null) {
   const human = await verifyTurnstile(turnstileToken);
   if (!human) return { ok: false, reason: 'not_human' as const };
+
+  if (!input.region || !input.gender || !input.date_of_birth) {
+    return { ok: false, reason: 'missing_core' as const };
+  }
+  const age_band = ageBandFromDob(input.date_of_birth);
+  if (!age_band) return { ok: false, reason: 'too_young' as const };
 
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { ok: false, reason: 'not_signed_in' as const };
 
+  const clean = (s?: string | null) => {
+    const v = (s ?? '').trim();
+    return v.length ? v.slice(0, 60) : null;
+  };
+
   const { error } = await supabase.from('profiles').update({
-    region: demo.region, age_band: demo.age_band, gender: demo.gender,
-    education: demo.education, employment: demo.employment, origin: demo.origin,
+    region: input.region,
+    age_band,
+    date_of_birth: input.date_of_birth,
+    gender: input.gender,
+    first_name: clean(input.first_name),
+    last_name: clean(input.last_name),
+    marital_status: input.marital_status ?? null,
+    employment: input.employment ?? null,
+    education: input.education ?? null,
+    origin: input.origin ?? null,
+    phone: (input.phone ?? '').trim().slice(0, 30) || null,
   }).eq('user_id', user.id);
 
   if (error) return { ok: false, reason: 'error' as const };

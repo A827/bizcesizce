@@ -31,6 +31,32 @@ export const ORIGINS = [
 ] as const;
 export type Origin = (typeof ORIGINS)[number];
 
+export const MARITAL_STATUSES = [
+  'Bekar', 'İlişkisi var', 'Evli', 'Boşanmış', 'Dul', 'Belirtmek istemiyorum',
+] as const;
+export type MaritalStatus = (typeof MARITAL_STATUSES)[number];
+
+// Derive the fixed age band (used for vote breakdowns) from a birth date.
+export function ageFromDob(dob: string): number | null {
+  const d = new Date(dob);
+  if (isNaN(d.getTime())) return null;
+  const now = new Date();
+  let age = now.getFullYear() - d.getFullYear();
+  const m = now.getMonth() - d.getMonth();
+  if (m < 0 || (m === 0 && now.getDate() < d.getDate())) age--;
+  return age;
+}
+
+export function ageBandFromDob(dob: string): AgeBand | null {
+  const age = ageFromDob(dob);
+  if (age === null || age < 18 || age > 120) return null;
+  if (age <= 24) return '18-24';
+  if (age <= 34) return '25-34';
+  if (age <= 44) return '35-44';
+  if (age <= 54) return '45-54';
+  return '55+';
+}
+
 export const CATEGORIES = [
   'Politics', 'Local', 'Economy', 'Lifestyle',
   'Transport', 'Environment', 'Other',
