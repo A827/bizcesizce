@@ -13,6 +13,17 @@ export const STRINGS = {
   emailSend:      { tr: 'E-posta ile giriş bağlantısı gönder',       en: 'Send me a sign-in link' },
   emailSent:      { tr: 'Giriş bağlantısı e-postana gönderildi. Gelen kutunu kontrol et.', en: 'A sign-in link is on its way. Check your inbox.' },
   loginBlurb:     { tr: 'Kuzey Kıbrıs ne düşünüyor? Oyla, anında sonuçları gör.', en: 'What does North Cyprus think? Vote and see live results.' },
+  tabSignIn:      { tr: 'Giriş yap',                                  en: 'Log in' },
+  tabSignUp:      { tr: 'Hesap oluştur',                              en: 'Sign up' },
+  passwordPlaceholder: { tr: 'Şifre',                                 en: 'Password' },
+  pwLogin:        { tr: 'Giriş yap',                                  en: 'Log in' },
+  pwSignup:       { tr: 'Hesap oluştur',                              en: 'Create account' },
+  confirmEmailSent:{ tr: 'Hesabını doğrulamak için e-postana gönderdiğimiz bağlantıya tıkla.',
+                     en: 'Click the link we emailed you to confirm your account.' },
+  wrongCreds:     { tr: 'E-posta veya şifre hatalı.',                 en: 'Wrong email or password.' },
+  emailNotConfirmed:{ tr: 'Önce e-postandaki doğrulama bağlantısına tıkla.', en: 'Please confirm your email first (check your inbox).' },
+  pwTooShort:     { tr: 'Şifre en az 6 karakter olmalı.',            en: 'Password must be at least 6 characters.' },
+  magicInstead:   { tr: 'Şifresiz giriş bağlantısı gönder',          en: 'Email me a sign-in link instead' },
 
   // First-run setup
   setupTitle:     { tr: 'Birkaç saniyelik kurulum',                  en: 'A few seconds of setup' },
