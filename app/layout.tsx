@@ -1,9 +1,26 @@
 import type { Metadata } from 'next';
+import { Fraunces, Spline_Sans, Spline_Sans_Mono } from 'next/font/google';
 import './globals.css';
 import { LanguageProvider } from '@/components/LanguageProvider';
 import { SetupGuard } from '@/components/SetupGuard';
 import { Analytics } from '@vercel/analytics/react';
 import { SpeedInsights } from '@vercel/speed-insights/next';
+
+// Self-hosted, preloaded fonts (no render-blocking external request).
+// latin-ext covers Turkish glyphs (ç ğ ş ı İ ö ü). display:swap avoids
+// invisible text while loading.
+const fraunces = Fraunces({
+  subsets: ['latin', 'latin-ext'], weight: ['400', '500', '600'],
+  variable: '--font-fraunces', display: 'swap',
+});
+const spline = Spline_Sans({
+  subsets: ['latin', 'latin-ext'], weight: ['400', '500', '600'],
+  variable: '--font-spline', display: 'swap',
+});
+const splineMono = Spline_Sans_Mono({
+  subsets: ['latin', 'latin-ext'], weight: ['400', '500', '600'],
+  variable: '--font-spline-mono', display: 'swap',
+});
 
 export const metadata: Metadata = {
   title: 'Bizce sizce',
@@ -24,20 +41,13 @@ export const metadata: Metadata = {
   appleWebApp: { capable: true, title: 'Bizce sizce', statusBarStyle: 'black-translucent' },
 };
 
-export const viewport = { themeColor: '#0d0d0f', width: 'device-width', initialScale: 1 };
+export const viewport = {
+  themeColor: '#0d0d0f', width: 'device-width', initialScale: 1, viewportFit: 'cover' as const,
+};
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="tr">
-      <head>
-        {/* Fonts: Fraunces (display), Spline Sans (UI), Spline Sans Mono (labels) */}
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
-        <link
-          href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Spline+Sans:wght@400;500;600&family=Spline+Sans+Mono:wght@400;500;600&display=swap"
-          rel="stylesheet"
-        />
-      </head>
+    <html lang="tr" className={`${fraunces.variable} ${spline.variable} ${splineMono.variable}`}>
       <body>
         <LanguageProvider>{children}</LanguageProvider>
         <SetupGuard />

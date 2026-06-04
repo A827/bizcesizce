@@ -21,24 +21,27 @@
 * { box-sizing: border-box; }
 html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text); }
 body {
-  font-family: "Spline Sans", system-ui, -apple-system, sans-serif;
+  font-family: var(--font-spline), system-ui, -apple-system, sans-serif;
   -webkit-font-smoothing: antialiased;
   line-height: 1.5;
 }
 
-.serif  { font-family: "Fraunces", Georgia, serif; }
-.mono   { font-family: "Spline Sans Mono", ui-monospace, monospace; }
+.serif  { font-family: var(--font-fraunces), Georgia, serif; }
+.mono   { font-family: var(--font-spline-mono), ui-monospace, monospace; }
 
 /* Layout ------------------------------------------------- */
-.shell { max-width: 640px; margin: 0 auto; padding: 0 18px 80px; }
+.shell {
+  max-width: 640px; margin: 0 auto;
+  padding: 0 max(18px, env(safe-area-inset-left)) 80px max(18px, env(safe-area-inset-right));
+}
 
 /* Header ------------------------------------------------- */
 .header {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 18px 0; position: sticky; top: 0; z-index: 20;
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  padding: 16px 0; position: sticky; top: 0; z-index: 20;
   background: linear-gradient(var(--bg) 70%, transparent);
 }
-.logo { font-family: "Fraunces", serif; font-weight: 600; font-size: 20px; letter-spacing: -.01em; }
+.logo { font-family: var(--font-fraunces), serif; font-weight: 600; font-size: 20px; letter-spacing: -.01em; }
 .logo b { color: var(--accent); }
 
 /* Buttons ------------------------------------------------ */
@@ -68,9 +71,9 @@ body {
   border-radius: var(--radius); padding: 22px; margin: 16px 0; box-shadow: var(--shadow);
 }
 .card.daily { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent), var(--shadow); }
-.kicker { font-family: "Spline Sans Mono", monospace; font-size: 11px; letter-spacing: .12em;
+.kicker { font-family: var(--font-spline-mono), monospace; font-size: 11px; letter-spacing: .12em;
           text-transform: uppercase; color: var(--accent); margin-bottom: 8px; }
-.question { font-family: "Fraunces", serif; font-size: 24px; line-height: 1.25; font-weight: 500; margin: 0 0 18px; }
+.question { font-family: var(--font-fraunces), serif; font-size: clamp(20px, 5.2vw, 25px); line-height: 1.25; font-weight: 500; margin: 0 0 18px; }
 
 /* Vote buttons row -------------------------------------- */
 .vote-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
@@ -78,14 +81,14 @@ body {
 /* Result bars ------------------------------------------- */
 .bar-wrap { margin-top: 6px; }
 .bar-label { display: flex; justify-content: space-between; font-size: 14px; margin: 12px 0 6px; }
-.bar-pct { font-family: "Spline Sans Mono", monospace; font-weight: 600; }
+.bar-pct { font-family: var(--font-spline-mono), monospace; font-weight: 600; }
 .bar { height: 14px; border-radius: 999px; background: var(--surface-2); overflow: hidden; }
 .bar > span { display: block; height: 100%; width: 0; border-radius: 999px;
               transition: width .9s cubic-bezier(.22,1,.36,1); }
 .bar.agree > span    { background: var(--agree); }
 .bar.disagree > span { background: var(--disagree); }
-.total { font-family: "Spline Sans Mono", monospace; font-size: 13px; color: var(--muted); margin-top: 14px; }
-.verdict { margin-top: 14px; font-family: "Fraunces", serif; font-size: 18px; }
+.total { font-family: var(--font-spline-mono), monospace; font-size: 13px; color: var(--muted); margin-top: 14px; }
+.verdict { margin-top: 14px; font-family: var(--font-fraunces), serif; font-size: 18px; }
 .verdict.majority { color: var(--accent); }
 .verdict.outlier  { color: var(--coral); }
 
@@ -123,7 +126,7 @@ button, input, select, textarea, a { outline-color: var(--accent); }
 .wiz-progress > span { display: block; height: 100%; background: var(--accent); border-radius: 999px;
                        transition: width .5s cubic-bezier(.22,1,.36,1); }
 .wiz-step { flex: 1; display: flex; flex-direction: column; justify-content: center; }
-.wiz-q { font-family: "Fraunces", serif; font-size: 30px; line-height: 1.18; font-weight: 500; margin: 0 0 8px; }
+.wiz-q { font-family: var(--font-fraunces), serif; font-size: clamp(24px, 6.5vw, 32px); line-height: 1.18; font-weight: 500; margin: 0 0 8px; }
 .wiz-sub { color: var(--muted); margin: 0 0 22px; font-size: 15px; }
 .wiz-input { width: 100%; padding: 16px; font-size: 18px; border-radius: 14px;
              background: var(--surface-2); border: 1px solid var(--border); color: var(--text); }
@@ -149,6 +152,31 @@ button, input, select, textarea, a { outline-color: var(--accent); }
 @keyframes slideBack { from { opacity: 0; transform: translateX(-24px);} to { opacity: 1; transform: none; } }
 .pop { animation: pop .5s cubic-bezier(.22,1.4,.36,1); }
 @keyframes pop { 0% { transform: scale(.4); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+
+/* Never let anything force a horizontal scroll on the whole page. */
+html, body { overflow-x: hidden; max-width: 100%; }
+img, svg, video { max-width: 100%; height: auto; }
+/* Wide tables (admin) scroll inside their own box on small screens. */
+.table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+/* Phones (narrow) ---------------------------------------- */
+@media (max-width: 420px) {
+  .shell { padding-left: max(14px, env(safe-area-inset-left)); padding-right: max(14px, env(safe-area-inset-right)); }
+  .card { padding: 18px; }
+  .vote-row { gap: 10px; }
+  .logo { font-size: 18px; }
+  .header .btn { padding: 7px 11px; }
+}
+
+/* Very small phones: stack the two vote buttons if labels are long. */
+@media (max-width: 330px) {
+  .vote-row { grid-template-columns: 1fr; }
+}
+
+/* Large screens: a touch more breathing room, comfortable reading width. */
+@media (min-width: 1024px) {
+  .shell { max-width: 680px; }
+}
 
 @media (prefers-reduced-motion: reduce) {
   * { animation: none !important; transition: none !important; }
