@@ -200,3 +200,42 @@ export async function completeSetup(input: SetupInput, turnstileToken: string | 
   revalidatePath('/');
   return { ok: true as const };
 }
+
+// --- My profile (the signed-in user's own data) -----------------------
+export type MyProfile = {
+  first_name: string | null; last_name: string | null; date_of_birth: string | null;
+  region: string | null; age_band: string | null; gender: string | null;
+  marital_status: string | null; employment: string | null; education: string | null;
+  origin: string | null; phone: string | null; created_at: string;
+};
+
+export async function getMyProfile(): Promise<MyProfile | null> {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return null;
+  const { data } = await supabase.from('profiles')
+    .select('first_name, last_name, date_of_birth, region, age_band, gender, marital_status, employment, education, origin, phone, created_at')
+    .eq('user_id', user.id).single();
+  return (data ?? null) as MyProfile | null;
+}
+
+// Only the safe-to-change fields. Demographics stay locked (DB trigger
+// also enforces this) to keep vote breakdowns honest.
+export async function updateProfile(input: {
+  first_name?: string | null; last_name?: string | null;
+  phone?: string | null; marital_status?: MaritalStatus | null;
+}) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { ok: false, reason: 'not_signed_in' as const };
+  const clean = (s?: string | null) => { const v = (s ?? '').trim(); return v.length ? v.slice(0, 60) : null; };
+  const { error } = await supabase.from('profiles').update({
+    first_name: clean(input.first_name),
+    last_name: clean(input.last_name),
+    phone: (input.phone ?? '').trim().slice(0, 30) || null,
+    marital_status: input.marital_status ?? null,
+  }).eq('user_id', user.id);
+  if (error) return { ok: false, reason: 'error' as const };
+  revalidatePath('/profile');
+  return { ok: true as const };
+}

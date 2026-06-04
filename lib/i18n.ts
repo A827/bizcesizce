@@ -62,6 +62,18 @@ export const STRINGS = {
   doneBlurb:      { tr: 'Profilin oluşturuldu. Şimdi oy verme zamanı.', en: 'Your profile is ready. Time to vote.' },
   goVote:         { tr: 'Oylamaya başla',                            en: 'Start voting' },
 
+  // Profile page
+  profileTitle:   { tr: 'Profilim',                                  en: 'My profile' },
+  profileLink:    { tr: 'Profil',                                    en: 'Profile' },
+  labDob:         { tr: 'Doğum tarihi',                              en: 'Date of birth' },
+  labPhone:       { tr: 'Telefon',                                   en: 'Phone' },
+  editable:       { tr: 'Düzenlenebilir',                            en: 'Editable' },
+  lockedHint:     { tr: 'Sonuçların doğruluğu için sabit',           en: 'Fixed to keep results accurate' },
+  memberSince:    { tr: 'Üyelik',                                    en: 'Member since' },
+  save:           { tr: 'Kaydet',                                    en: 'Save' },
+  saved:          { tr: 'Kaydedildi ✓',                              en: 'Saved ✓' },
+  notSet:         { tr: 'Belirtilmemiş',                             en: 'Not set' },
+
   // Comments
   comments:       { tr: 'Yorumlar',                                  en: 'Comments' },
   commentsOff:    { tr: 'Bu konuda yorumlar kapalı.',               en: 'Comments are off for this topic.' },
