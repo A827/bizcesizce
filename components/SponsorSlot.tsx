@@ -1,13 +1,15 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useLang } from './LanguageProvider';
-import { getSponsors } from '@/lib/actions';
+import { getSponsors, trackSponsor } from '@/lib/actions';
 import { Sponsor, SponsorPlacement } from '@/lib/types';
 
-// A clearly-labelled, direct-sponsor slot. No tracking, no programmatic ads.
+// A clearly-labelled, direct-sponsor slot. Aggregate impression/click
+// counts only — no cookies, no per-user tracking, no programmatic ads.
 export function SponsorSlot({ placement }: { placement: SponsorPlacement }) {
   const { t, lang } = useLang();
   const [sponsor, setSponsor] = useState<Sponsor | null>(null);
+  const trackedImpression = useRef<string | null>(null);
 
   useEffect(() => {
     let alive = true;
@@ -19,11 +21,20 @@ export function SponsorSlot({ placement }: { placement: SponsorPlacement }) {
     return () => { alive = false; };
   }, [placement]);
 
+  // Count one impression per shown sponsor.
+  useEffect(() => {
+    if (sponsor && trackedImpression.current !== sponsor.id) {
+      trackedImpression.current = sponsor.id;
+      trackSponsor(sponsor.id, 'impression');
+    }
+  }, [sponsor]);
+
   if (!sponsor) return null;
   const label = (lang === 'tr' ? sponsor.label_tr : (sponsor.label_en || sponsor.label_tr));
 
   return (
     <a href={sponsor.url} target="_blank" rel="noopener noreferrer sponsored"
+      onClick={() => trackSponsor(sponsor.id, 'click')}
       style={{ display: 'block', textDecoration: 'none', margin: '16px 0',
         background: 'var(--surface-2)', border: '1px solid var(--border)',
         borderRadius: 'var(--radius)', padding: '14px 18px' }}>

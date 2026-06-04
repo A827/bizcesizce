@@ -241,6 +241,10 @@ export function SetupForm() {
                 {saving ? L('loading') : L('finishSetup')}
               </button>
             </div>
+            <p className="muted" style={{ fontSize: 12, marginTop: 14, textAlign: 'center' }}>
+              {L('consentLine')}{' '}
+              <a href="/privacy" target="_blank">{L('privacy')}</a> · <a href="/terms" target="_blank">{L('terms')}</a>
+            </p>
           </>
         )}
 

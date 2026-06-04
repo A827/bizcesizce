@@ -34,6 +34,8 @@ export type Sponsor = {
   url: string;
   placement: SponsorPlacement;
   is_active: boolean;
+  impressions?: number;
+  clicks?: number;
 };
 
 export type Comment = {

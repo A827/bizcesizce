@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useLang } from '@/components/LanguageProvider';
 import { createClient } from '@/lib/supabase/client';
-import { updateProfile, MyProfile } from '@/lib/actions';
+import { updateProfile, deleteMyAccount, MyProfile } from '@/lib/actions';
 import { MARITAL_STATUSES, MaritalStatus } from '@/lib/constants';
 import { StringKey } from '@/lib/i18n';
 
@@ -17,6 +17,15 @@ export function ProfileView({ profile, email }: { profile: MyProfile; email: str
   const [phone, setPhone] = useState(profile.phone ?? '');
   const [marital, setMarital] = useState<MaritalStatus | ''>((profile.marital_status as MaritalStatus) ?? '');
   const [state, setState] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+
+  async function removeAccount() {
+    setDeleting(true);
+    const res = await deleteMyAccount();
+    if (res.ok) { router.push('/login'); router.refresh(); }
+    else { setDeleting(false); }
+  }
 
   async function save() {
     setState('saving');
@@ -104,6 +113,28 @@ export function ProfileView({ profile, email }: { profile: MyProfile; email: str
         <button className="btn btn-ghost" style={{ padding: '8px 14px', minHeight: 0 }} onClick={signOut}>
           {L('signOut')}
         </button>
+      </div>
+
+      {/* Danger zone: permanent self-service deletion (right to erasure) */}
+      <div style={{ marginTop: 24, textAlign: 'center' }}>
+        {!confirmDelete ? (
+          <button className="btn btn-ghost" style={{ color: 'var(--coral)', fontSize: 13, padding: '8px 14px', minHeight: 0 }}
+            onClick={() => setConfirmDelete(true)}>
+            {L('deleteAccount')}
+          </button>
+        ) : (
+          <div className="card" style={{ borderColor: 'var(--coral)' }}>
+            <p style={{ margin: '0 0 14px', fontSize: 14 }}>{L('deleteConfirm')}</p>
+            <div style={{ display: 'flex', gap: 10, justifyContent: 'center' }}>
+              <button className="btn" disabled={deleting} onClick={() => setConfirmDelete(false)}>{L('cancel')}</button>
+              <button className="btn" disabled={deleting}
+                style={{ background: 'var(--coral)', color: '#fff', borderColor: 'var(--coral)' }}
+                onClick={removeAccount}>
+                {deleting ? L('loading') : L('deleteYes')}
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </>
   );

@@ -177,7 +177,11 @@ function SponsorsTab() {
         items.map((s) => (
           <div className="card" key={s.id}>
             <div style={{ fontSize: 15, marginBottom: 4 }}>{s.label_tr}</div>
-            <div className="mono muted" style={{ fontSize: 12, marginBottom: 10 }}>{s.placement} · {s.url}</div>
+            <div className="mono muted" style={{ fontSize: 12, marginBottom: 6 }}>{s.placement} · {s.url}</div>
+            <div className="mono" style={{ fontSize: 12, marginBottom: 10 }}>
+              👁 {s.impressions ?? 0} gösterim · 🖱 {s.clicks ?? 0} tıklama
+              {s.impressions ? ` · CTR ${((100 * (s.clicks ?? 0)) / s.impressions).toFixed(1)}%` : ''}
+            </div>
             <div className="vote-row">
               <button className="btn" disabled={pending} onClick={() => start(async () => { await setSponsorActive(s.id, !s.is_active); await refresh(); })}>
                 {s.is_active ? 'Pasifleştir' : 'Aktifleştir'}

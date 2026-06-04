@@ -161,7 +161,7 @@ export async function moderateComment(id: string, status: CommentStatus) {
 export async function listSponsors(): Promise<Sponsor[]> {
   const sb = await requireAdmin(); if (!sb) return [];
   const { data } = await sb.from('sponsors')
-    .select('id, label_tr, label_en, url, placement, is_active')
+    .select('id, label_tr, label_en, url, placement, is_active, impressions, clicks')
     .order('created_at', { ascending: false });
   return (data ?? []) as Sponsor[];
 }

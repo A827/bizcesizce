@@ -84,6 +84,13 @@ export const STRINGS = {
   save:           { tr: 'Kaydet',                                    en: 'Save' },
   saved:          { tr: 'Kaydedildi ✓',                              en: 'Saved ✓' },
   notSet:         { tr: 'Belirtilmemiş',                             en: 'Not set' },
+  deleteAccount:  { tr: 'Hesabımı ve verilerimi sil',                en: 'Delete my account & data' },
+  deleteConfirm:  { tr: 'Emin misin? Hesabın ve tüm verilerin kalıcı olarak silinecek. Bu geri alınamaz.',
+                    en: 'Are you sure? Your account and all your data will be permanently deleted. This cannot be undone.' },
+  deleteYes:      { tr: 'Evet, kalıcı olarak sil',                   en: 'Yes, delete permanently' },
+  cancel:         { tr: 'Vazgeç',                                    en: 'Cancel' },
+  consentLine:    { tr: 'Devam ederek Gizlilik Politikası ve Koşulları kabul etmiş olursun.',
+                    en: 'By continuing you agree to the Privacy Policy and Terms.' },
 
   // Comments
   comments:       { tr: 'Yorumlar',                                  en: 'Comments' },

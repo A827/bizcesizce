@@ -111,6 +111,12 @@ export async function getSponsors(placement: SponsorPlacement): Promise<Sponsor[
   return (data ?? []) as Sponsor[];
 }
 
+// Count a sponsor view or click (aggregate only; no cookies / no per-user data).
+export async function trackSponsor(sponsorId: string, kind: 'impression' | 'click') {
+  const supabase = await createClient();
+  await supabase.rpc('track_sponsor', { p_id: sponsorId, p_kind: kind });
+}
+
 export async function postComment(topicId: string, body: string) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -217,6 +223,19 @@ export async function getMyProfile(): Promise<MyProfile | null> {
     .select('first_name, last_name, date_of_birth, region, age_band, gender, marital_status, employment, education, origin, phone, created_at')
     .eq('user_id', user.id).single();
   return (data ?? null) as MyProfile | null;
+}
+
+// Right to erasure: a user permanently deletes their OWN account and all
+// their data. Deleting the auth user cascades to profile, votes and comments.
+export async function deleteMyAccount() {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { ok: false as const };
+  const admin = createAdminClient();
+  const { error } = await admin.auth.admin.deleteUser(user.id);
+  if (error) return { ok: false as const };
+  await supabase.auth.signOut();
+  return { ok: true as const };
 }
 
 // Only the safe-to-change fields. Demographics stay locked (DB trigger
