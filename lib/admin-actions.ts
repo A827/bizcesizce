@@ -49,6 +49,7 @@ export async function rejectSuggestion(id: string) {
 
 export async function createTopic(input: {
   question_tr: string; question_en: string; category: Category;
+  image_url?: string; description_tr?: string; description_en?: string; source_url?: string;
   options?: { label_tr: string; label_en: string }[];
 }) {
   const writer = await adminWriter(); if (!writer) return { ok: false, error: 'not admin' };
@@ -57,6 +58,10 @@ export async function createTopic(input: {
   const { data: topic, error } = await writer.from('topics').insert({
     question_tr: input.question_tr, question_en: input.question_en, category: input.category,
     is_active: true, poll_type: isMulti ? 'multi' : 'binary',
+    image_url: input.image_url?.trim() || null,
+    description_tr: input.description_tr?.trim() || null,
+    description_en: input.description_en?.trim() || null,
+    source_url: input.source_url?.trim() || null,
   }).select('id').single();
 
   if (error || !topic?.id) return { ok: false, error: error?.message ?? 'insert failed' };
@@ -76,6 +81,21 @@ export async function updateTopicText(topicId: string, question_tr: string, ques
   const w = await adminWriter(); if (!w) return { ok: false };
   if (!question_tr.trim() || !question_en.trim()) return { ok: false, error: 'empty' };
   await w.from('topics').update({ question_tr: question_tr.trim(), question_en: question_en.trim() }).eq('id', topicId);
+  revalidatePath('/admin'); revalidatePath('/'); return { ok: true };
+}
+
+// Update a topic's media/context fields (image, description, source).
+export async function updateTopicMeta(topicId: string, input: {
+  image_url?: string | null; description_tr?: string | null;
+  description_en?: string | null; source_url?: string | null;
+}) {
+  const w = await adminWriter(); if (!w) return { ok: false };
+  await w.from('topics').update({
+    image_url: (input.image_url ?? '')?.trim() || null,
+    description_tr: (input.description_tr ?? '')?.trim() || null,
+    description_en: (input.description_en ?? '')?.trim() || null,
+    source_url: (input.source_url ?? '')?.trim() || null,
+  }).eq('id', topicId);
   revalidatePath('/admin'); revalidatePath('/'); return { ok: true };
 }
 

@@ -32,9 +32,20 @@ export function PublicLanding({ topics, counts }: { topics: Topic[]; counts: Rec
       ) : (
         topics.map((t) => (
           <Link key={t.id} href={`/anket/${t.id}`} className="card"
-            style={{ display: 'block', textDecoration: 'none', color: 'inherit' }}>
+            style={{ display: 'block', textDecoration: 'none', color: 'inherit', overflow: 'hidden' }}>
+            {t.image_url && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={t.image_url} alt={t.question_tr}
+                style={{ width: 'calc(100% + 44px)', maxHeight: 180, objectFit: 'cover',
+                  margin: '-22px -22px 14px', display: 'block' }} />
+            )}
             {t.is_daily && <div className="kicker">Günün sorusu</div>}
             <h2 className="question" style={{ margin: '0 0 8px' }}>{t.question_tr}</h2>
+            {t.description_tr && (
+              <p className="muted" style={{ margin: '0 0 8px', fontSize: 14 }}>
+                {t.description_tr.length > 120 ? t.description_tr.slice(0, 120) + '…' : t.description_tr}
+              </p>
+            )}
             <div className="total" style={{ marginTop: 0 }}>
               {(counts[t.id] ?? 0)} oy · sonuçları gör →
             </div>

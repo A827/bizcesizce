@@ -117,9 +117,22 @@ export default async function PublicPollPage({ params }: { params: Promise<{ id:
               {CATEGORY_LABELS_TR[topic.category as Category] ?? 'Anket'}
             </Link>
           </div>
+          {topic.image_url && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={topic.image_url} alt={topic.question_tr}
+              style={{ width: '100%', maxHeight: 280, objectFit: 'cover', borderRadius: 12, margin: '4px 0 14px' }} />
+          )}
           <h1 className="question">{topic.question_tr}</h1>
           {topic.question_en && (
-            <p className="muted" style={{ marginTop: -8, marginBottom: 16, fontStyle: 'italic' }}>{topic.question_en}</p>
+            <p className="muted" style={{ marginTop: -8, marginBottom: 12, fontStyle: 'italic' }}>{topic.question_en}</p>
+          )}
+          {topic.description_tr && (
+            <p style={{ marginTop: 0, marginBottom: 16, fontSize: 15, lineHeight: 1.5 }}>{topic.description_tr}</p>
+          )}
+          {topic.source_url && (
+            <p style={{ marginTop: -8, marginBottom: 16 }}>
+              <a href={topic.source_url} target="_blank" rel="noopener noreferrer" style={{ fontSize: 13 }}>Kaynak / Source →</a>
+            </p>
           )}
 
           {total > 0 ? (

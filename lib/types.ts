@@ -18,6 +18,10 @@ export type Topic = {
   comment_mode: CommentMode;
   scheduled_daily_date: string | null;
   poll_type: PollType;
+  image_url?: string | null;
+  description_tr?: string | null;
+  description_en?: string | null;
+  source_url?: string | null;
   options?: TopicOption[];
   created_at: string;
 };

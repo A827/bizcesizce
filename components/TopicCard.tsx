@@ -73,9 +73,24 @@ export function TopicCard({ data }: { data: TopicCardData }) {
   const userPickedTop = topOption?.option_id === myOptionId;
 
   return (
-    <article className={`card${topic.is_daily ? ' daily' : ''}`}>
+    <article className={`card${topic.is_daily ? ' daily' : ''}`} style={topic.image_url ? { overflow: 'hidden' } : undefined}>
+      {topic.image_url && (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={topic.image_url} alt={question}
+          style={{ width: 'calc(100% + 44px)', maxHeight: 220, objectFit: 'cover', margin: '-22px -22px 14px', display: 'block' }} />
+      )}
       {topic.is_daily && <div className="kicker">{t('dailyKicker')}</div>}
       <h2 className="question">{question}</h2>
+      {(lang === 'tr' ? topic.description_tr : (topic.description_en || topic.description_tr)) && (
+        <p className="muted" style={{ margin: '0 0 14px', fontSize: 14, lineHeight: 1.5 }}>
+          {lang === 'tr' ? topic.description_tr : (topic.description_en || topic.description_tr)}
+        </p>
+      )}
+      {topic.source_url && (
+        <p style={{ margin: '-6px 0 14px' }}>
+          <a href={topic.source_url} target="_blank" rel="noopener noreferrer" style={{ fontSize: 13 }}>{t('source')} →</a>
+        </p>
+      )}
 
       {/* ---------- NOT VOTED: show choices ---------- */}
       {!voted && (isMulti ? (

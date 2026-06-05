@@ -6,7 +6,7 @@ import { Topic } from '@/lib/types';
 import {
   approveSuggestion, rejectSuggestion, createTopic, setDaily, setActive,
   setCommentsEnabled, setCommentMode, setScheduledDate,
-  updateTopicText, addOption, updateOption, deleteOption,
+  updateTopicText, updateTopicMeta, addOption, updateOption, deleteOption,
   listPendingComments, moderateComment, PendingComment,
   getBreakdown, getTimeseries, BreakdownRow, TimePoint,
   listSponsors, createSponsor, setSponsorActive, deleteSponsor,
@@ -18,6 +18,7 @@ import {
   deleteTopic, getTopicCounts,
 } from '@/lib/admin-actions';
 import { getOptionResults } from '@/lib/actions';
+import { uploadTopicImage } from '@/lib/upload';
 import { Sponsor, SponsorPlacement, OptionResult } from '@/lib/types';
 
 type Suggestion = { id: string; question_tr: string; question_en: string | null };
@@ -27,6 +28,31 @@ const inputStyle: React.CSSProperties = {
   width: '100%', padding: 12, borderRadius: 10, background: 'var(--surface)',
   border: '1px solid var(--border)', color: 'var(--text)', font: 'inherit', marginBottom: 10,
 };
+
+function ImageUploader({ value, onChange }: { value: string; onChange: (url: string) => void }) {
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState(false);
+  return (
+    <div style={{ marginBottom: 10 }}>
+      {value && <img src={value} alt="" style={{ width: '100%', maxHeight: 180, objectFit: 'cover',
+        borderRadius: 10, marginBottom: 8 }} />}
+      <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+        <input type="file" accept="image/*" disabled={busy}
+          onChange={async (e) => {
+            const f = e.target.files?.[0]; if (!f) return;
+            setBusy(true); setErr(false);
+            const url = await uploadTopicImage(f);
+            setBusy(false);
+            if (url) onChange(url); else setErr(true);
+          }} />
+        {busy && <span className="muted" style={{ fontSize: 12 }}>Yükleniyor…</span>}
+        {value && !busy && <button className="btn" style={{ minHeight: 0, padding: '4px 10px', fontSize: 12 }}
+          onClick={() => onChange('')}>Kaldır</button>}
+      </div>
+      {err && <p className="error" style={{ fontSize: 12, marginTop: 6 }}>Yükleme başarısız.</p>}
+    </div>
+  );
+}
 
 export function AdminPanel({ topics, suggestions }: { topics: Topic[]; suggestions: Suggestion[] }) {
   const { t } = useLang();
@@ -342,6 +368,7 @@ function TopicsTab({ topics }: { topics: Topic[] }) {
   const [confirmDel, setConfirmDel] = useState<string | null>(null);
   useEffect(() => { getTopicCounts().then(setCounts); }, []);
   const [qtr, setQtr] = useState(''); const [qen, setQen] = useState(''); const [cat, setCat] = useState<Category>('Other');
+  const [img, setImg] = useState(''); const [dtr, setDtr] = useState(''); const [den, setDen] = useState(''); const [src, setSrc] = useState('');
   const [multi, setMulti] = useState(false);
   const [opts, setOpts] = useState<{ tr: string; en: string }[]>([{ tr: '', en: '' }, { tr: '', en: '' }]);
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
@@ -360,6 +387,12 @@ function TopicsTab({ topics }: { topics: Topic[] }) {
         <select style={inputStyle} value={cat} onChange={(e) => setCat(e.target.value as Category)}>
           {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
         </select>
+
+        <div className="kicker" style={{ marginTop: 4 }}>Görsel (isteğe bağlı)</div>
+        <ImageUploader value={img} onChange={setImg} />
+        <textarea style={{ ...inputStyle, minHeight: 50 }} placeholder="Açıklama / bağlam (TR) — isteğe bağlı" value={dtr} onChange={(e) => setDtr(e.target.value)} />
+        <textarea style={{ ...inputStyle, minHeight: 50 }} placeholder="Description / context (EN) — optional" value={den} onChange={(e) => setDen(e.target.value)} />
+        <input style={inputStyle} placeholder="Kaynak bağlantısı (https://…) — isteğe bağlı" value={src} onChange={(e) => setSrc(e.target.value)} />
 
         <label style={{ display: 'flex', gap: 8, alignItems: 'center', cursor: 'pointer', fontSize: 14, margin: '4px 0 12px' }}>
           <input type="checkbox" checked={multi} onChange={(e) => setMulti(e.target.checked)} />
@@ -383,10 +416,12 @@ function TopicsTab({ topics }: { topics: Topic[] }) {
         <button className="btn btn-accent btn-block" disabled={pending || !canCreate}
           onClick={() => start(async () => {
             const res = await createTopic({ question_tr: qtr.trim(), question_en: qen.trim(), category: cat,
+              image_url: img, description_tr: dtr, description_en: den, source_url: src,
               options: multi ? validOpts.map((o) => ({ label_tr: o.tr, label_en: o.en })) : undefined });
             if (res.ok) {
               setMsg({ ok: true, text: 'Oluşturuldu ✓' });
               setQtr(''); setQen(''); setMulti(false); setOpts([{ tr: '', en: '' }, { tr: '', en: '' }]);
+              setImg(''); setDtr(''); setDen(''); setSrc('');
             } else {
               setMsg({ ok: false, text: 'Hata: ' + (res.error ?? '') });
             }
@@ -453,6 +488,11 @@ function EditTopic({ tp }: { tp: Topic }) {
   const [qen, setQen] = useState(tp.question_en);
   const [opts, setOpts] = useState(tp.options ?? []);
   const [newTr, setNewTr] = useState(''); const [newEn, setNewEn] = useState('');
+  const [img, setImg] = useState(tp.image_url ?? '');
+  const [dtr, setDtr] = useState(tp.description_tr ?? '');
+  const [den, setDen] = useState(tp.description_en ?? '');
+  const [src, setSrc] = useState(tp.source_url ?? '');
+  const [metaSaved, setMetaSaved] = useState(false);
 
   const inp: React.CSSProperties = { width: '100%', padding: 10, borderRadius: 8, background: 'var(--surface)',
     border: '1px solid var(--border)', color: 'var(--text)', font: 'inherit', marginBottom: 8 };
@@ -468,6 +508,18 @@ function EditTopic({ tp }: { tp: Topic }) {
           <textarea style={{ ...inp, minHeight: 50 }} value={qen} onChange={(e) => setQen(e.target.value)} />
           <button className="btn btn-accent" style={{ minHeight: 0, padding: '8px 12px' }} disabled={pending}
             onClick={() => start(() => { updateTopicText(tp.id, qtr, qen); })}>Soruyu kaydet</button>
+
+          <div style={{ marginTop: 14 }}>
+            <div className="kicker">Görsel · açıklama · kaynak</div>
+            <ImageUploader value={img} onChange={setImg} />
+            <textarea style={{ ...inp, minHeight: 50 }} placeholder="Açıklama (TR)" value={dtr} onChange={(e) => setDtr(e.target.value)} />
+            <textarea style={{ ...inp, minHeight: 50 }} placeholder="Description (EN)" value={den} onChange={(e) => setDen(e.target.value)} />
+            <input style={inp} placeholder="Kaynak bağlantısı (https://…)" value={src} onChange={(e) => setSrc(e.target.value)} />
+            <button className="btn btn-accent" style={{ minHeight: 0, padding: '8px 12px' }} disabled={pending}
+              onClick={() => start(async () => { await updateTopicMeta(tp.id, { image_url: img, description_tr: dtr, description_en: den, source_url: src }); setMetaSaved(true); setTimeout(() => setMetaSaved(false), 2500); })}>
+              {metaSaved ? 'Kaydedildi ✓' : 'Görsel/açıklamayı kaydet'}
+            </button>
+          </div>
 
           {tp.poll_type === 'multi' && (
             <div style={{ marginTop: 14 }}>

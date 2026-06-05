@@ -178,6 +178,7 @@ export const STRINGS = {
   archive:        { tr: 'Arşiv',                                     en: 'Archive' },
   howItWorks:     { tr: 'Nasıl çalışır',                             en: 'How it works' },
   share:          { tr: 'Paylaş',                                    en: 'Share' },
+  source:         { tr: 'Kaynak',                                     en: 'Source' },
   signOut:        { tr: 'Çıkış yap',                                 en: 'Sign out' },
 } as const;
 
