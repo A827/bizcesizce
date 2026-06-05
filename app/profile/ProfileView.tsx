@@ -1,9 +1,10 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useLang } from '@/components/LanguageProvider';
 import { createClient } from '@/lib/supabase/client';
-import { updateProfile, deleteMyAccount, MyProfile } from '@/lib/actions';
+import { updateProfile, deleteMyAccount, getMyVotes, MyProfile, MyVoteRow } from '@/lib/actions';
+import Link from 'next/link';
 import { MARITAL_STATUSES, MaritalStatus } from '@/lib/constants';
 import { StringKey } from '@/lib/i18n';
 
@@ -19,6 +20,8 @@ export function ProfileView({ profile, email }: { profile: MyProfile; email: str
   const [state, setState] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [votes, setVotes] = useState<MyVoteRow[] | null>(null);
+  useEffect(() => { getMyVotes().then(setVotes); }, []);
 
   async function removeAccount() {
     setDeleting(true);
@@ -94,6 +97,23 @@ export function ProfileView({ profile, email }: { profile: MyProfile; email: str
           {state === 'saving' ? L('loading') : state === 'saved' ? L('saved') : L('save')}
         </button>
         {state === 'error' && <p className="error" style={{ fontSize: 13, marginTop: 8 }}>{L('errorGeneric')}</p>}
+      </div>
+
+      {/* My votes */}
+      <div className="kicker" style={{ marginTop: 22 }}>{L('myVotes')}{votes ? ` (${votes.length})` : ''}</div>
+      <div className="card" style={{ marginTop: 8, paddingTop: 6, paddingBottom: 6 }}>
+        {votes === null ? <div className="skeleton" style={{ height: 40 }} /> :
+          votes.length === 0 ? <p className="muted" style={{ fontSize: 13, margin: '8px 0' }}>{L('noVotesYet')}</p> :
+          votes.map((v) => (
+            <Link key={v.topic_id} href={`/anket/${v.topic_id}`}
+              style={{ display: 'block', padding: '10px 0', borderBottom: '1px solid var(--border)',
+                textDecoration: 'none', color: 'inherit' }}>
+              <div style={{ fontSize: 14 }}>{v.question}</div>
+              <div className="mono" style={{ fontSize: 11, color: 'var(--muted)', marginTop: 3 }}>
+                <span style={{ color: 'var(--accent)' }}>{v.answer}</span> · {new Date(v.created_at).toLocaleDateString(lang === 'tr' ? 'tr-TR' : 'en-US')}
+              </div>
+            </Link>
+          ))}
       </div>
 
       {/* Locked */}

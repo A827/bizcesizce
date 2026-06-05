@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { Topic } from '@/lib/types';
+import { CATEGORIES, CATEGORY_LABELS_TR } from '@/lib/constants';
 
 // Logged-out, fully indexable landing page. Real content (the live polls)
 // is rendered server-side so search engines and shared links see it.
@@ -18,6 +19,12 @@ export function PublicLanding({ topics, counts }: { topics: Topic[]; counts: Rec
           Oy vermeye başla →
         </Link>
       </section>
+
+      <div className="chips" style={{ marginTop: 24, justifyContent: 'center' }}>
+        {CATEGORIES.map((c) => (
+          <Link key={c} href={`/kategori/${c.toLowerCase()}`} className="chip">{CATEGORY_LABELS_TR[c]}</Link>
+        ))}
+      </div>
 
       <div className="kicker" style={{ marginTop: 28 }}>Güncel anketler · Live polls</div>
       {topics.length === 0 ? (

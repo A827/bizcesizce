@@ -6,6 +6,7 @@ import { getResults, getOptionResults } from '@/lib/actions';
 import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
 import { Comment, Topic } from '@/lib/types';
+import { CATEGORY_LABELS_TR, Category } from '@/lib/constants';
 
 export const dynamic = 'force-dynamic';
 
@@ -95,7 +96,11 @@ export default async function PublicPollPage({ params }: { params: Promise<{ id:
       <main className="shell">
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
         <article className="card daily" style={{ marginTop: 16 }}>
-          <div className="kicker">Bizce sizce · Anket</div>
+          <div className="kicker">
+            Bizce sizce · <Link href={`/kategori/${(topic.category as Category).toLowerCase()}`} style={{ color: 'var(--accent)' }}>
+              {CATEGORY_LABELS_TR[topic.category as Category] ?? 'Anket'}
+            </Link>
+          </div>
           <h1 className="question">{topic.question_tr}</h1>
           {topic.question_en && (
             <p className="muted" style={{ marginTop: -8, marginBottom: 16, fontStyle: 'italic' }}>{topic.question_en}</p>

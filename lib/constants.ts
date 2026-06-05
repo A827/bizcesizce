@@ -63,6 +63,12 @@ export const CATEGORIES = [
 ] as const;
 export type Category = (typeof CATEGORIES)[number];
 
+// Turkish display labels for categories (used on public category pages/chips).
+export const CATEGORY_LABELS_TR: Record<Category, string> = {
+  Politics: 'Siyaset', Local: 'Yerel', Economy: 'Ekonomi', Lifestyle: 'Yaşam',
+  Transport: 'Ulaşım', Environment: 'Çevre', Other: 'Diğer',
+};
+
 export type Choice = 'agree' | 'disagree';
 export type PollType = 'binary' | 'multi';
 

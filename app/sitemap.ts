@@ -1,5 +1,6 @@
 import type { MetadataRoute } from 'next';
 import { createClient } from '@/lib/supabase/server';
+import { CATEGORIES } from '@/lib/constants';
 
 const BASE = 'https://bizcesizce.com';
 
@@ -11,6 +12,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${BASE}/advertise`, changeFrequency: 'monthly', priority: 0.4 },
     { url: `${BASE}/privacy`, changeFrequency: 'yearly', priority: 0.3 },
     { url: `${BASE}/terms`, changeFrequency: 'yearly', priority: 0.3 },
+    ...CATEGORIES.map((c) => ({
+      url: `${BASE}/kategori/${c.toLowerCase()}`,
+      changeFrequency: 'weekly' as const, priority: 0.5,
+    })),
   ];
 
   try {

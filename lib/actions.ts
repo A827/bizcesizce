@@ -248,6 +248,25 @@ export async function getMyProfile(): Promise<MyProfile | null> {
   return (data ?? null) as MyProfile | null;
 }
 
+// A user's own voting history (their answers, with the question text).
+export type MyVoteRow = { topic_id: string; question: string; answer: string; created_at: string };
+export async function getMyVotes(): Promise<MyVoteRow[]> {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return [];
+  const { data } = await supabase.from('votes')
+    .select('topic_id, choice, created_at, topic:topics(question_tr), option:topic_options(label_tr)')
+    .eq('user_id', user.id).order('created_at', { ascending: false }).limit(200);
+  type Row = { topic_id: string; choice: string | null; created_at: string;
+    topic: { question_tr: string } | null; option: { label_tr: string } | null };
+  return ((data ?? []) as unknown as Row[]).map((v) => ({
+    topic_id: v.topic_id,
+    question: v.topic?.question_tr ?? '—',
+    answer: v.option?.label_tr ?? (v.choice === 'agree' ? 'Katılıyorum' : v.choice === 'disagree' ? 'Katılmıyorum' : '—'),
+    created_at: v.created_at,
+  }));
+}
+
 // Right to erasure: a user permanently deletes their OWN account and all
 // their data. Deleting the auth user cascades to profile, votes and comments.
 export async function deleteMyAccount() {
