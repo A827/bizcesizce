@@ -24,6 +24,11 @@ export const STRINGS = {
   emailNotConfirmed:{ tr: 'Önce e-postandaki doğrulama bağlantısına tıkla.', en: 'Please confirm your email first (check your inbox).' },
   pwTooShort:     { tr: 'Şifre en az 6 karakter olmalı.',            en: 'Password must be at least 6 characters.' },
   magicInstead:   { tr: 'Şifresiz giriş bağlantısı gönder',          en: 'Email me a sign-in link instead' },
+  forgotPw:       { tr: 'Şifremi unuttum',                            en: 'Forgot password?' },
+  resetSent:      { tr: 'Şifre sıfırlama bağlantısı e-postana gönderildi.', en: 'A password reset link is on its way to your email.' },
+  setNewPassword: { tr: 'Yeni şifreni belirle',                       en: 'Set your new password' },
+  newPassword:    { tr: 'Yeni şifre',                                 en: 'New password' },
+  pwUpdated:      { tr: 'Şifren güncellendi ✓',                       en: 'Password updated ✓' },
 
   // First-run setup
   setupTitle:     { tr: 'Birkaç saniyelik kurulum',                  en: 'A few seconds of setup' },
@@ -102,6 +107,7 @@ export const STRINGS = {
   postComment:    { tr: 'Gönder',                                    en: 'Post' },
   commentPending: { tr: 'Yorumun incelendikten sonra yayınlanacak.', en: 'Your comment will appear after review.' },
   noComments:     { tr: 'Henüz yorum yok. İlk yorumu sen yaz.',     en: 'No comments yet. Be the first.' },
+  reply:          { tr: 'Yanıtla',                                    en: 'Reply' },
   voteToComment:  { tr: 'Yorum yapmak için önce oy ver.',          en: 'Vote first to comment.' },
   rateLimited:    { tr: 'Çok hızlısın, biraz bekleyip tekrar dene.', en: "You're going too fast — please wait a moment." },
 

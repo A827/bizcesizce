@@ -1,17 +1,17 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
-import { createClient } from '@/lib/supabase/server';
-import { getResults, getOptionResults } from '@/lib/actions';
+import { createPublicClient } from '@/lib/supabase/public';
 import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
-import { Comment, Topic } from '@/lib/types';
+import { Comment, Topic, OptionResult } from '@/lib/types';
 import { CATEGORY_LABELS_TR, Category } from '@/lib/constants';
 
-export const dynamic = 'force-dynamic';
+// Cache + refresh every 60s (public content, no per-user data).
+export const revalidate = 60;
 
 async function loadTopic(id: string) {
-  const supabase = await createClient();
+  const supabase = createPublicClient();
   const { data } = await supabase.from('topics')
     .select('*').eq('id', id).eq('is_active', true).single();
   return (data as Topic | null) ?? null;
@@ -50,7 +50,7 @@ export default async function PublicPollPage({ params }: { params: Promise<{ id:
   const topic = await loadTopic(id);
   if (!topic) notFound();
 
-  const supabase = await createClient();
+  const supabase = createPublicClient();
   const { data: comments } = await supabase.from('comments')
     .select('id, topic_id, body, status, region, author_name, created_at')
     .eq('topic_id', id).eq('status', 'approved')
@@ -68,7 +68,8 @@ export default async function PublicPollPage({ params }: { params: Promise<{ id:
   let bars: { label: string; pct: number; color: string }[] = [];
 
   if (isMulti) {
-    const opts = await getOptionResults(id);
+    const { data } = await supabase.rpc('topic_option_results', { p_topic_id: id });
+    const opts = (data ?? []) as OptionResult[];
     total = opts.reduce((s, o) => s + o.votes, 0);
     const palette = ['#e8c547', '#6f6cff', '#ff5d52', '#4ec9b0', '#c97bff'];
     bars = opts.map((o, i) => ({
@@ -77,9 +78,12 @@ export default async function PublicPollPage({ params }: { params: Promise<{ id:
       color: palette[i % palette.length],
     }));
   } else {
-    const r = await getResults(id);
-    total = r.total_agree + r.total_disagree;
-    const agreePct = total ? Math.round((r.total_agree / total) * 100) : 0;
+    const { data } = await supabase.rpc('topic_results', { p_topic_id: id });
+    const rows = (data ?? []) as { region: string; agree_count: number; disagree_count: number }[];
+    const t = rows.find((r) => r.region === 'TOTAL');
+    const agree = t?.agree_count ?? 0; const disagree = t?.disagree_count ?? 0;
+    total = agree + disagree;
+    const agreePct = total ? Math.round((agree / total) * 100) : 0;
     bars = [
       { label: 'Katılıyorum', pct: agreePct, color: 'var(--agree)' },
       { label: 'Katılmıyorum', pct: 100 - agreePct, color: 'var(--disagree)' },

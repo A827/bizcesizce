@@ -49,5 +49,8 @@ export type Comment = {
   status: CommentStatus;
   region: string | null;
   author_name: string | null;
+  parent_id?: string | null;
+  like_count?: number;
+  liked?: boolean;
   created_at: string;
 };

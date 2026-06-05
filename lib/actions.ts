@@ -94,11 +94,37 @@ export async function getComments(topicId: string): Promise<Comment[]> {
   const supabase = await createClient();
   const { data } = await supabase
     .from('comments')
-    .select('id, topic_id, body, status, region, author_name, created_at')
+    .select('id, topic_id, body, status, region, author_name, parent_id, like_count, created_at')
     .eq('topic_id', topicId)
-    .order('created_at', { ascending: false })
-    .limit(100);
-  return (data ?? []) as Comment[];
+    .order('created_at', { ascending: true })
+    .limit(200);
+  const list = (data ?? []) as Comment[];
+
+  // Mark which comments the current user has liked.
+  const { data: { user } } = await supabase.auth.getUser();
+  if (user && list.length) {
+    const ids = list.map((c) => c.id);
+    const { data: likes } = await supabase.from('comment_likes')
+      .select('comment_id').eq('user_id', user.id).in('comment_id', ids);
+    const liked = new Set((likes ?? []).map((l: { comment_id: string }) => l.comment_id));
+    for (const c of list) c.liked = liked.has(c.id);
+  }
+  return list;
+}
+
+// Like / unlike a comment (toggles). Returns the new liked state.
+export async function toggleCommentLike(commentId: string) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { ok: false as const };
+  const { data: existing } = await supabase.from('comment_likes')
+    .select('comment_id').eq('comment_id', commentId).eq('user_id', user.id).maybeSingle();
+  if (existing) {
+    await supabase.from('comment_likes').delete().eq('comment_id', commentId).eq('user_id', user.id);
+    return { ok: true as const, liked: false };
+  }
+  await supabase.from('comment_likes').insert({ comment_id: commentId, user_id: user.id });
+  return { ok: true as const, liked: true };
 }
 
 // --- Sponsors (public reads active ones for a placement) ---
@@ -140,7 +166,7 @@ export async function trackSponsor(sponsorId: string, kind: 'impression' | 'clic
   await supabase.rpc('track_sponsor', { p_id: sponsorId, p_kind: kind });
 }
 
-export async function postComment(topicId: string, body: string) {
+export async function postComment(topicId: string, body: string, parentId?: string | null) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { ok: false, reason: 'not_signed_in' as const };
@@ -148,7 +174,7 @@ export async function postComment(topicId: string, body: string) {
   if (!trimmed || trimmed.length > 600) return { ok: false, reason: 'invalid' as const };
 
   const { data: inserted, error } = await supabase.from('comments').insert({
-    topic_id: topicId, user_id: user.id, body: trimmed,
+    topic_id: topicId, user_id: user.id, body: trimmed, parent_id: parentId ?? null,
   }).select('id').single();
 
   if (error) {

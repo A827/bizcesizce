@@ -1,13 +1,14 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
-import { createClient } from '@/lib/supabase/server';
+import { createPublicClient } from '@/lib/supabase/public';
 import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
 import { CATEGORIES, CATEGORY_LABELS_TR, Category } from '@/lib/constants';
 import { Topic } from '@/lib/types';
 
-export const dynamic = 'force-dynamic';
+// Cache + refresh every 60s (public content, no per-user data).
+export const revalidate = 60;
 
 function resolve(catParam: string): Category | null {
   return CATEGORIES.find((c) => c.toLowerCase() === catParam.toLowerCase()) ?? null;
@@ -31,7 +32,7 @@ export default async function CategoryPage({ params }: { params: Promise<{ cat: 
   if (!c) notFound();
   const label = CATEGORY_LABELS_TR[c];
 
-  const supabase = await createClient();
+  const supabase = createPublicClient();
   const { data } = await supabase.from('topics')
     .select('*').eq('is_active', true).eq('category', c)
     .order('created_at', { ascending: false });

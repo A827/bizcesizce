@@ -20,6 +20,26 @@ export function PublicLanding({ topics, counts }: { topics: Topic[]; counts: Rec
         </Link>
       </section>
 
+      {(() => {
+        const trending = [...topics].filter((t) => (counts[t.id] ?? 0) > 0)
+          .sort((a, b) => (counts[b.id] ?? 0) - (counts[a.id] ?? 0)).slice(0, 5);
+        if (trending.length < 3) return null;
+        return (
+          <section style={{ marginTop: 28 }}>
+            <div className="kicker">🔥 En çok oylananlar · Trending</div>
+            {trending.map((t, i) => (
+              <Link key={t.id} href={`/anket/${t.id}`}
+                style={{ display: 'flex', gap: 12, alignItems: 'baseline', padding: '10px 0',
+                  borderBottom: '1px solid var(--border)', textDecoration: 'none', color: 'inherit' }}>
+                <span className="serif" style={{ color: 'var(--accent)', fontSize: 18, width: 22 }}>{i + 1}</span>
+                <span style={{ flex: 1, fontSize: 15 }}>{t.question_tr}</span>
+                <span className="mono muted" style={{ fontSize: 12 }}>{counts[t.id]} oy</span>
+              </Link>
+            ))}
+          </section>
+        );
+      })()}
+
       <div className="chips" style={{ marginTop: 24, justifyContent: 'center' }}>
         {CATEGORIES.map((c) => (
           <Link key={c} href={`/kategori/${c.toLowerCase()}`} className="chip">{CATEGORY_LABELS_TR[c]}</Link>

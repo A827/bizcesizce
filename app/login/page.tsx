@@ -56,6 +56,17 @@ export default function LoginPage() {
     router.push('/'); router.refresh();
   }
 
+  async function forgotPassword() {
+    if (!email.trim()) { setMsg({ kind: 'error', text: t('emailPlaceholder') }); return; }
+    setBusy(true); setMsg(null);
+    const supabase = createClient();
+    const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+      redirectTo: `${window.location.origin}/sifre-yenile`,
+    });
+    setBusy(false);
+    setMsg(error ? { kind: 'error', text: t('errorGeneric') } : { kind: 'ok', text: t('resetSent') });
+  }
+
   async function sendMagicLink() {
     if (!email.trim() || magicState === 'sending') return;
     setMagicState('sending'); setMsg(null);
@@ -116,6 +127,11 @@ export default function LoginPage() {
         <button className="btn btn-accent btn-block" disabled={!email.trim() || busy} onClick={submitPassword}>
           {busy ? t('loading') : mode === 'signup' ? t('pwSignup') : t('pwLogin')}
         </button>
+
+        {mode === 'signin' && (
+          <button className="btn btn-ghost" style={{ fontSize: 12, padding: '6px 10px', minHeight: 0, marginTop: 6 }}
+            disabled={busy} onClick={forgotPassword}>{t('forgotPw')}</button>
+        )}
 
         {msg && <p className={msg.kind === 'error' ? 'error' : ''}
           style={{ fontSize: 13, marginTop: 10, color: msg.kind === 'ok' ? 'var(--accent)' : undefined }}>{msg.text}</p>}
