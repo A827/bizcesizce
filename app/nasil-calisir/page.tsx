@@ -8,12 +8,26 @@ export const metadata = {
   alternates: { canonical: '/nasil-calisir' },
 };
 
+const FAQ = [
+  { q: 'Herkes kaç kez oy verebilir?', a: 'Her kayıtlı kişi her konuda yalnızca bir kez oy verir. Bu kural veritabanı düzeyinde uygulanır.' },
+  { q: 'Sonuçlar anonim mi?', a: 'Evet. Sonuçlar yalnızca toplu sayılar olarak gösterilir; hiç kimsenin tek tek oyu veya kimliği herkese açık gösterilmez.' },
+  { q: 'Küçük örnekler sonuçları yanıltır mı?', a: 'Bir grubun dağılımı, yeterli sayıda oy toplanana kadar gösterilmez; böylece az sayıda oydan yanlış sonuç çıkmaz.' },
+];
+
 export default function HowItWorksPage() {
   const h2 = { fontSize: 20, marginTop: 28, marginBottom: 6 } as const;
+  const faqLd = {
+    '@context': 'https://schema.org', '@type': 'FAQPage',
+    mainEntity: FAQ.map((f) => ({
+      '@type': 'Question', name: f.q,
+      acceptedAnswer: { '@type': 'Answer', text: f.a },
+    })),
+  };
   return (
     <>
       <Header />
       <main className="shell" style={{ maxWidth: 640 }}>
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqLd) }} />
         <h1 className="serif" style={{ fontSize: 30 }}>Nasıl çalışır · How it works</h1>
 
         <h2 className="serif" style={h2}>Herkese bir oy</h2>

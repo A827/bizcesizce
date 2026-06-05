@@ -37,10 +37,28 @@ export default async function CategoryPage({ params }: { params: Promise<{ cat: 
     .order('created_at', { ascending: false });
   const topics = (data ?? []) as Topic[];
 
+  const jsonLd = [
+    {
+      '@context': 'https://schema.org', '@type': 'BreadcrumbList',
+      itemListElement: [
+        { '@type': 'ListItem', position: 1, name: 'Anasayfa', item: 'https://bizcesizce.com/' },
+        { '@type': 'ListItem', position: 2, name: label, item: `https://bizcesizce.com/kategori/${c.toLowerCase()}` },
+      ],
+    },
+    {
+      '@context': 'https://schema.org', '@type': 'ItemList',
+      itemListElement: topics.map((t, i) => ({
+        '@type': 'ListItem', position: i + 1, name: t.question_tr,
+        url: `https://bizcesizce.com/anket/${t.id}`,
+      })),
+    },
+  ];
+
   return (
     <>
       <Header />
       <main className="shell">
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
         <p className="mono muted" style={{ fontSize: 12, marginTop: 12 }}>
           <Link href="/">Anasayfa</Link> · {label}
         </p>

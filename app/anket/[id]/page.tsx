@@ -57,6 +57,12 @@ export default async function PublicPollPage({ params }: { params: Promise<{ id:
     .order('created_at', { ascending: false }).limit(20);
   const approved = (comments ?? []) as Comment[];
 
+  // Related polls in the same category (internal linking + discovery).
+  const { data: relatedData } = await supabase.from('topics')
+    .select('id, question_tr').eq('is_active', true).eq('category', topic.category)
+    .neq('id', id).order('created_at', { ascending: false }).limit(5);
+  const related = (relatedData ?? []) as { id: string; question_tr: string }[];
+
   const isMulti = topic.poll_type === 'multi';
   let total = 0;
   let bars: { label: string; pct: number; color: string }[] = [];
@@ -80,15 +86,25 @@ export default async function PublicPollPage({ params }: { params: Promise<{ id:
     ];
   }
 
-  // JSON-LD for the question (helps rich results).
-  const jsonLd = {
-    '@context': 'https://schema.org',
-    '@type': 'Question',
-    name: topic.question_tr,
-    text: topic.question_tr,
-    answerCount: total,
-    dateCreated: topic.created_at,
-  };
+  const catLabel = CATEGORY_LABELS_TR[topic.category as Category] ?? 'Anket';
+  const catSlug = (topic.category as Category).toLowerCase();
+
+  // JSON-LD: the question + a breadcrumb trail (both help rich results).
+  const jsonLd = [
+    {
+      '@context': 'https://schema.org', '@type': 'Question',
+      name: topic.question_tr, text: topic.question_tr,
+      answerCount: total, dateCreated: topic.created_at,
+    },
+    {
+      '@context': 'https://schema.org', '@type': 'BreadcrumbList',
+      itemListElement: [
+        { '@type': 'ListItem', position: 1, name: 'Anasayfa', item: 'https://bizcesizce.com/' },
+        { '@type': 'ListItem', position: 2, name: catLabel, item: `https://bizcesizce.com/kategori/${catSlug}` },
+        { '@type': 'ListItem', position: 3, name: topic.question_tr, item: `https://bizcesizce.com/anket/${id}` },
+      ],
+    },
+  ];
 
   return (
     <>
@@ -135,8 +151,21 @@ export default async function PublicPollPage({ params }: { params: Promise<{ id:
           </section>
         )}
 
-        <p style={{ marginTop: 24 }}>
-          <Link href="/">← Tüm anketler · All polls</Link>
+        {related.length > 0 && (
+          <section style={{ marginTop: 18 }}>
+            <div className="kicker">Benzer anketler · Related</div>
+            {related.map((r) => (
+              <Link key={r.id} href={`/anket/${r.id}`} className="card"
+                style={{ display: 'block', textDecoration: 'none', color: 'inherit', padding: 16 }}>
+                <span style={{ fontSize: 15 }}>{r.question_tr}</span>
+              </Link>
+            ))}
+          </section>
+        )}
+
+        <p style={{ marginTop: 24, display: 'flex', gap: 16 }}>
+          <Link href={`/kategori/${catSlug}`}>← {catLabel}</Link>
+          <Link href="/">Tüm anketler →</Link>
         </p>
         <Footer />
       </main>
