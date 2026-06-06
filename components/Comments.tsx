@@ -102,7 +102,7 @@ export function Comments({ topicId, canComment }: { topicId: string; canComment:
       {state === 'error' && <p className="error" style={{ fontSize: 13 }}>{t('errorGeneric')}</p>}
 
       {items === null ? (
-        <div className="skeleton" style={{ height: 48, marginTop: 8 }} />
+        canComment ? <div className="skeleton" style={{ height: 48, marginTop: 8 }} /> : null
       ) : tops.length === 0 ? (
         <p className="muted" style={{ fontSize: 13, marginTop: 8 }}>{t('noComments')}</p>
       ) : (
