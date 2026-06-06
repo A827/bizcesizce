@@ -1,10 +1,14 @@
 import type { Metadata } from 'next';
 import { Fraunces, Spline_Sans, Spline_Sans_Mono } from 'next/font/google';
 import './globals.css';
+import Script from 'next/script';
 import { LanguageProvider } from '@/components/LanguageProvider';
 import { SetupGuard } from '@/components/SetupGuard';
+import { SideRails } from '@/components/SideRails';
 import { Analytics } from '@vercel/analytics/react';
 import { SpeedInsights } from '@vercel/speed-insights/next';
+
+const ADSENSE_CLIENT = process.env.NEXT_PUBLIC_ADSENSE_CLIENT;
 
 // Self-hosted, preloaded fonts (no render-blocking external request).
 // latin-ext covers Turkish glyphs (ç ğ ş ı İ ö ü). display:swap avoids
@@ -64,10 +68,22 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             publisher: { '@type': 'Organization', name: 'Bizce sizce', url: 'https://bizcesizce.com' },
           }) }}
         />
-        <LanguageProvider>{children}</LanguageProvider>
+        <LanguageProvider>
+          <SideRails />
+          {children}
+        </LanguageProvider>
         <SetupGuard />
         <Analytics />
         <SpeedInsights />
+        {ADSENSE_CLIENT && (
+          <Script
+            id="adsbygoogle-init"
+            async
+            strategy="afterInteractive"
+            crossOrigin="anonymous"
+            src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${ADSENSE_CLIENT}`}
+          />
+        )}
       </body>
     </html>
   );

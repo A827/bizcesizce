@@ -238,6 +238,7 @@ function SponsorsTab() {
           <option value="reveal">Sonuç altı (reveal)</option>
           <option value="feed">Akış içi (feed)</option>
           <option value="footer">Altbilgi (footer)</option>
+          <option value="rail">Yan sütun (rail · masaüstü)</option>
         </select>
         <button className="btn btn-accent btn-block" disabled={pending || !ltr.trim() || !url.trim()}
           onClick={() => start(async () => { await createSponsor({ label_tr: ltr.trim(), label_en: len.trim(), url: url.trim(), placement }); setLtr(''); setLen(''); setUrl(''); await refresh(); })}>

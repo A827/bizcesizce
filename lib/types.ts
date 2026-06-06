@@ -30,7 +30,7 @@ export type OptionResult = { option_id: string; label_tr: string; label_en: stri
 
 export type MyVote = { topic_id: string; choice: Choice } | null;
 
-export type SponsorPlacement = 'reveal' | 'feed' | 'footer';
+export type SponsorPlacement = 'reveal' | 'feed' | 'footer' | 'rail';
 export type Sponsor = {
   id: string;
   label_tr: string;

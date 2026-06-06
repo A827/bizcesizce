@@ -194,6 +194,18 @@ img, svg, video { max-width: 100%; height: auto; }
   .shell { max-width: 680px; }
 }
 
+/* Desktop side rails (sponsors + ads). Hidden below 1280px so they never
+   crowd the reading column; the centre column is 680px (half = 340px). */
+.side-rail { display: none; }
+@media (min-width: 1280px) {
+  .side-rail {
+    display: block; position: fixed; top: 88px; width: 200px; z-index: 5;
+    max-height: calc(100vh - 120px); overflow: hidden;
+  }
+  .side-rail-left  { left:  max(16px, calc(50% - 340px - 24px - 200px)); }
+  .side-rail-right { right: max(16px, calc(50% - 340px - 24px - 200px)); }
+}
+
 @media (prefers-reduced-motion: reduce) {
   * { animation: none !important; transition: none !important; }
 }
