@@ -1,5 +1,5 @@
 'use client';
-import { useState, useTransition, useEffect } from 'react';
+import { useState, useTransition, useEffect, useMemo, createContext, useContext, useCallback } from 'react';
 import { useLang } from '@/components/LanguageProvider';
 import { CATEGORIES, Category, CommentMode } from '@/lib/constants';
 import { Topic } from '@/lib/types';
@@ -16,7 +16,12 @@ import {
   getErrors, clearErrors, AppError,
   getAnnouncementSettings, setAnnouncement,
   deleteTopic, getTopicCounts,
+  getVotesByDay, getTopPollsToday, getPendingCounts, DayVotes, TopPoll,
 } from '@/lib/admin-actions';
+
+// --- Lightweight toast for save/confirmation feedback ---
+const ToastCtx = createContext<(msg: string) => void>(() => {});
+const useToast = () => useContext(ToastCtx);
 import { getOptionResults } from '@/lib/actions';
 import { uploadTopicImage } from '@/lib/upload';
 import { Sponsor, SponsorPlacement, OptionResult } from '@/lib/types';
@@ -57,32 +62,43 @@ function ImageUploader({ value, onChange }: { value: string; onChange: (url: str
 export function AdminPanel({ topics, suggestions }: { topics: Topic[]; suggestions: Suggestion[] }) {
   const { t } = useLang();
   const [tab, setTab] = useState<Tab>('overview');
+  const [toast, setToast] = useState<string | null>(null);
+  const [counts, setCounts] = useState<{ comments: number; errors: number }>({ comments: 0, errors: 0 });
 
-  const TabBtn = ({ id, label }: { id: Tab; label: string }) => (
+  const notify = useCallback((msg: string) => {
+    setToast(msg);
+    window.clearTimeout((notify as unknown as { _t?: number })._t);
+    (notify as unknown as { _t?: number })._t = window.setTimeout(() => setToast(null), 2600);
+  }, []);
+
+  useEffect(() => { getPendingCounts().then(setCounts); }, [tab]);
+
+  const TabBtn = ({ id, label, badge, muted }: { id: Tab; label: string; badge?: number; muted?: boolean }) => (
     <button className="btn" onClick={() => setTab(id)}
       style={{ padding: '8px 14px', minHeight: 0,
         background: tab === id ? 'var(--accent)' : 'var(--surface-2)',
         color: tab === id ? 'var(--accent-ink)' : 'var(--text)',
         borderColor: tab === id ? 'var(--accent)' : 'var(--border)', fontWeight: tab === id ? 600 : 400 }}>
       {label}
+      {badge ? <span className={`tab-badge${muted ? ' is-muted' : ''}`}>{badge}</span> : null}
     </button>
   );
 
   return (
-    <>
+    <ToastCtx.Provider value={notify}>
       <h1 className="serif" style={{ fontSize: 28 }}>{t('adminTitle')}</h1>
-      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', margin: '16px 0 8px' }}>
+      <div className="admin-tabs">
         <TabBtn id="overview" label={t('tabOverview')} />
-        <TabBtn id="suggestions" label={`${t('tabSuggestions')} (${suggestions.length})`} />
-        <TabBtn id="topics" label={t('tabTopics')} />
+        <TabBtn id="suggestions" label={t('tabSuggestions')} badge={suggestions.length} />
+        <TabBtn id="topics" label={t('tabTopics')} badge={topics.length} muted />
         <TabBtn id="results" label={t('tabResults')} />
-        <TabBtn id="moderation" label={t('tabModeration')} />
+        <TabBtn id="moderation" label={t('tabModeration')} badge={counts.comments} />
         <TabBtn id="sponsors" label={t('tabSponsors')} />
         <TabBtn id="people" label={t('tabPeople')} />
-        <TabBtn id="errors" label={t('tabErrors')} />
+        <TabBtn id="errors" label={t('tabErrors')} badge={counts.errors} />
       </div>
 
-      {tab === 'overview' && <OverviewTab />}
+      {tab === 'overview' && <OverviewTab topics={topics} onGoToModeration={() => setTab('topics')} />}
       {tab === 'suggestions' && <SuggestionsTab suggestions={suggestions} />}
       {tab === 'topics' && <TopicsTab topics={topics} />}
       {tab === 'results' && <ResultsTab topics={topics} />}
@@ -90,7 +106,9 @@ export function AdminPanel({ topics, suggestions }: { topics: Topic[]; suggestio
       {tab === 'sponsors' && <SponsorsTab />}
       {tab === 'people' && <PeopleTab />}
       {tab === 'errors' && <ErrorsTab />}
-    </>
+
+      {toast && <div className="toast">{toast}</div>}
+    </ToastCtx.Provider>
   );
 }
 
@@ -219,8 +237,10 @@ function PeopleTab() {
 }
 
 function SponsorsTab() {
+  const notify = useToast();
   const [items, setItems] = useState<Sponsor[] | null>(null);
   const [pending, start] = useTransition();
+  const [confirmDel, setConfirmDel] = useState<string | null>(null);
   const [ltr, setLtr] = useState(''); const [len, setLen] = useState('');
   const [url, setUrl] = useState(''); const [placement, setPlacement] = useState<SponsorPlacement>('reveal');
 
@@ -241,7 +261,7 @@ function SponsorsTab() {
           <option value="rail">Yan sütun (rail · masaüstü)</option>
         </select>
         <button className="btn btn-accent btn-block" disabled={pending || !ltr.trim() || !url.trim()}
-          onClick={() => start(async () => { await createSponsor({ label_tr: ltr.trim(), label_en: len.trim(), url: url.trim(), placement }); setLtr(''); setLen(''); setUrl(''); await refresh(); })}>
+          onClick={() => start(async () => { await createSponsor({ label_tr: ltr.trim(), label_en: len.trim(), url: url.trim(), placement }); setLtr(''); setLen(''); setUrl(''); await refresh(); notify('Sponsor eklendi ✓'); })}>
           Ekle
         </button>
       </div>
@@ -257,12 +277,18 @@ function SponsorsTab() {
               {s.impressions ? ` · CTR ${((100 * (s.clicks ?? 0)) / s.impressions).toFixed(1)}%` : ''}
             </div>
             <div className="vote-row">
-              <button className="btn" disabled={pending} onClick={() => start(async () => { await setSponsorActive(s.id, !s.is_active); await refresh(); })}>
+              <button className="btn" disabled={pending} onClick={() => start(async () => { await setSponsorActive(s.id, !s.is_active); await refresh(); notify(s.is_active ? 'Pasifleştirildi' : 'Aktifleştirildi'); })}>
                 {s.is_active ? 'Pasifleştir' : 'Aktifleştir'}
               </button>
-              <button className="btn" disabled={pending} onClick={() => start(async () => { await deleteSponsor(s.id); await refresh(); })}>
-                Sil
-              </button>
+              {confirmDel === s.id ? (
+                <button className="btn" disabled={pending} style={{ background: 'var(--coral)', color: '#fff', borderColor: 'var(--coral)' }}
+                  onClick={() => start(async () => { await deleteSponsor(s.id); setConfirmDel(null); await refresh(); notify('Sponsor silindi'); })}>
+                  Emin misin?
+                </button>
+              ) : (
+                <button className="btn" disabled={pending} style={{ color: 'var(--coral)', borderColor: 'var(--coral)' }}
+                  onClick={() => setConfirmDel(s.id)}>Sil</button>
+              )}
             </div>
           </div>
         ))}
@@ -270,10 +296,16 @@ function SponsorsTab() {
   );
 }
 
-function OverviewTab() {
+function OverviewTab({ topics }: { topics: Topic[]; onGoToModeration?: () => void }) {
   const [ov, setOv] = useState<Overview | null>(null);
   const [audit, setAudit] = useState<AuditRow[] | null>(null);
-  useEffect(() => { getOverview().then(setOv); listAudit().then(setAudit); }, []);
+  const [trend, setTrend] = useState<DayVotes[] | null>(null);
+  const [top, setTop] = useState<TopPoll[] | null>(null);
+  useEffect(() => {
+    getOverview().then(setOv); listAudit().then(setAudit);
+    getVotesByDay(14).then(setTrend); getTopPollsToday().then(setTop);
+  }, []);
+  const titleOf = (id: string) => topics.find((tp) => tp.id === id)?.question_tr ?? '—';
 
   const Stat = ({ label, value }: { label: string; value: number }) => (
     <div style={{ background: 'var(--surface-2)', borderRadius: 'var(--radius)', padding: '14px 16px' }}>
@@ -281,6 +313,8 @@ function OverviewTab() {
       <div className="serif" style={{ fontSize: 26 }}>{value.toLocaleString('tr-TR')}</div>
     </div>
   );
+
+  const trendMax = Math.max(1, ...(trend ?? []).map((d) => d.votes));
 
   return (
     <>
@@ -293,6 +327,36 @@ function OverviewTab() {
           <Stat label="Kullanıcı" value={ov.total_users} />
         </div>
       )}
+
+      <div className="card">
+        <div className="kicker">Son 14 gün · oy hareketi</div>
+        {trend === null ? <div className="skeleton" style={{ height: 64 }} /> : (
+          <>
+            <div className="spark">
+              {trend.map((d) => (
+                <div key={d.day} title={`${d.day}: ${d.votes}`} style={{ height: `${(d.votes / trendMax) * 100}%` }} />
+              ))}
+            </div>
+            <div className="mono muted" style={{ fontSize: 11, display: 'flex', justifyContent: 'space-between', marginTop: 6 }}>
+              <span>{trend[0]?.day.slice(5)}</span>
+              <span>bugün · {trend[trend.length - 1]?.votes ?? 0} oy</span>
+            </div>
+          </>
+        )}
+      </div>
+
+      <div className="card">
+        <div className="kicker">Bugün en aktif anketler</div>
+        {top === null ? <div className="skeleton" style={{ height: 40 }} /> :
+          top.length === 0 ? <p className="muted" style={{ fontSize: 13, margin: '8px 0 0' }}>Bugün henüz oy yok.</p> :
+          top.map((p, i) => (
+            <div key={p.topic_id} style={{ display: 'flex', justifyContent: 'space-between', gap: 12, fontSize: 14, padding: '7px 0', borderBottom: i < top.length - 1 ? '1px solid var(--border)' : undefined }}>
+              <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{titleOf(p.topic_id)}</span>
+              <span className="mono" style={{ color: 'var(--accent)' }}>{p.votes}</span>
+            </div>
+          ))}
+      </div>
+
       <AnnouncementEditor />
 
       <h2 className="kicker">Son işlemler</h2>
@@ -362,8 +426,52 @@ function SuggestionsTab({ suggestions }: { suggestions: Suggestion[] }) {
   );
 }
 
+function DailyControl({ topics }: { topics: Topic[] }) {
+  const notify = useToast();
+  const [pending, start] = useTransition();
+  const current = topics.find((tp) => tp.is_daily) ?? null;
+  const active = topics.filter((tp) => tp.is_active && !tp.is_daily);
+  const [pick, setPick] = useState('');
+  const today = new Date().toISOString().slice(0, 10);
+  const scheduled = topics
+    .filter((tp) => tp.scheduled_daily_date && tp.scheduled_daily_date >= today)
+    .sort((a, b) => ((a.scheduled_daily_date ?? '') < (b.scheduled_daily_date ?? '') ? -1 : 1))
+    .slice(0, 7);
+
+  return (
+    <div className="card" style={{ borderColor: 'var(--accent)', boxShadow: '0 0 0 1px var(--accent), var(--shadow)' }}>
+      <div className="kicker">★ Günün sorusu · Daily question</div>
+      <div className="serif" style={{ fontSize: 18, margin: '4px 0 12px' }}>
+        {current ? current.question_tr : <span className="muted">Seçili değil · Not set</span>}
+      </div>
+      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+        <select style={{ ...inputStyle, marginBottom: 0, flex: 1, minWidth: 200 }} value={pick} onChange={(e) => setPick(e.target.value)}>
+          <option value="">Başka bir anketi seç…</option>
+          {active.map((tp) => <option key={tp.id} value={tp.id}>{tp.question_tr}</option>)}
+        </select>
+        <button className="btn btn-accent" style={{ minHeight: 0, padding: '10px 16px' }} disabled={pending || !pick}
+          onClick={() => start(async () => { await setDaily(pick); setPick(''); notify('Günün sorusu güncellendi ✓'); })}>
+          Günün sorusu yap
+        </button>
+      </div>
+      {scheduled.length > 0 && (
+        <div style={{ marginTop: 14 }}>
+          <div className="kicker">Planlanan · Scheduled</div>
+          {scheduled.map((tp) => (
+            <div key={tp.id} style={{ display: 'flex', justifyContent: 'space-between', gap: 12, fontSize: 13, padding: '5px 0', borderBottom: '1px solid var(--border)' }}>
+              <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{tp.question_tr}</span>
+              <span className="mono muted">{tp.scheduled_daily_date}</span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function TopicsTab({ topics }: { topics: Topic[] }) {
   const { t } = useLang();
+  const notify = useToast();
   const [pending, start] = useTransition();
   const [counts, setCounts] = useState<Record<string, number>>({});
   const [confirmDel, setConfirmDel] = useState<string | null>(null);
@@ -373,15 +481,50 @@ function TopicsTab({ topics }: { topics: Topic[] }) {
   const [multi, setMulti] = useState(false);
   const [opts, setOpts] = useState<{ tr: string; en: string }[]>([{ tr: '', en: '' }, { tr: '', en: '' }]);
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  const [showCreate, setShowCreate] = useState(false);
+
+  // --- list controls: search / filter / sort ---
+  const [search, setSearch] = useState('');
+  const [status, setStatus] = useState<'all' | 'active' | 'hidden'>('all');
+  const [catFilter, setCatFilter] = useState<'all' | Category>('all');
+  const [sort, setSort] = useState<'new' | 'votes' | 'az'>('new');
 
   const setOpt = (i: number, k: 'tr' | 'en', v: string) =>
     setOpts((arr) => arr.map((o, j) => (j === i ? { ...o, [k]: v } : o)));
   const validOpts = opts.filter((o) => o.tr.trim());
   const canCreate = qtr.trim() && qen.trim() && (!multi || validOpts.length >= 2);
 
+  const visibleTopics = useMemo(() => {
+    const needle = search.trim().toLowerCase();
+    let list = topics.filter((tp) => {
+      if (status === 'active' && !tp.is_active) return false;
+      if (status === 'hidden' && tp.is_active) return false;
+      if (catFilter !== 'all' && tp.category !== catFilter) return false;
+      if (needle && !(`${tp.question_tr} ${tp.question_en}`.toLowerCase().includes(needle))) return false;
+      return true;
+    });
+    if (sort === 'votes') list = [...list].sort((a, b) => (counts[b.id] ?? 0) - (counts[a.id] ?? 0));
+    else if (sort === 'az') list = [...list].sort((a, b) => a.question_tr.localeCompare(b.question_tr, 'tr'));
+    // 'new' keeps incoming order (already created_at desc)
+    return list;
+  }, [topics, search, status, catFilter, sort, counts]);
+
+  const selectStyle: React.CSSProperties = { ...inputStyle, marginBottom: 0, width: 'auto', flex: '0 0 auto' };
+
   return (
     <>
-      <h2 className="kicker" style={{ marginTop: 12 }}>{t('createTopic')}</h2>
+      <DailyControl topics={topics} />
+
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, margin: '18px 0 8px' }}>
+        <h2 className="kicker" style={{ margin: 0 }}>{topics.length} konu</h2>
+        <span style={{ flex: 1 }} />
+        <button className="btn btn-accent" style={{ minHeight: 0, padding: '8px 14px' }}
+          onClick={() => setShowCreate((s) => !s)}>
+          {showCreate ? 'Kapat' : '+ Yeni konu'}
+        </button>
+      </div>
+
+      {showCreate && (
       <div className="card">
         <textarea style={{ ...inputStyle, minHeight: 60 }} placeholder="Soru (TR)" value={qtr} onChange={(e) => setQtr(e.target.value)} />
         <textarea style={{ ...inputStyle, minHeight: 60 }} placeholder="Question (EN)" value={qen} onChange={(e) => setQen(e.target.value)} />
@@ -431,24 +574,47 @@ function TopicsTab({ topics }: { topics: Topic[] }) {
         </button>
         {msg && <p style={{ marginTop: 10, fontSize: 13, color: msg.ok ? 'var(--accent)' : 'var(--coral)' }}>{msg.text}</p>}
       </div>
+      )}
 
-      {topics.map((tp) => (
+      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center', margin: '4px 0 14px' }}>
+        <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Ara: soru…"
+          style={{ ...inputStyle, marginBottom: 0, flex: 1, minWidth: 160 }} />
+        <select style={selectStyle} value={status} onChange={(e) => setStatus(e.target.value as typeof status)}>
+          <option value="all">Tümü</option>
+          <option value="active">Aktif</option>
+          <option value="hidden">Gizli</option>
+        </select>
+        <select style={selectStyle} value={catFilter} onChange={(e) => setCatFilter(e.target.value as typeof catFilter)}>
+          <option value="all">Tüm kategoriler</option>
+          {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
+        </select>
+        <select style={selectStyle} value={sort} onChange={(e) => setSort(e.target.value as typeof sort)}>
+          <option value="new">En yeni</option>
+          <option value="votes">En çok oy</option>
+          <option value="az">A–Z</option>
+        </select>
+      </div>
+
+      {visibleTopics.length === 0 && <p className="muted" style={{ fontSize: 14 }}>Eşleşen konu yok.</p>}
+
+      {visibleTopics.map((tp) => (
         <div className="card" key={tp.id}>
           <div className="serif" style={{ fontSize: 17, marginBottom: 4 }}>
             {tp.is_daily && <span className="mono" style={{ color: 'var(--accent)', marginRight: 8 }}>★</span>}
             {tp.question_tr}
           </div>
-          <div className="mono muted" style={{ fontSize: 11, marginBottom: 10 }}>
-            {(counts[tp.id] ?? 0)} oy · {tp.is_active ? 'aktif' : 'gizli'}
+          <div className="mono muted" style={{ fontSize: 11, marginBottom: 10, display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+            <span>{(counts[tp.id] ?? 0)} oy · {tp.category} · {tp.is_active ? 'aktif' : 'gizli'}</span>
+            <a href={`/anket/${tp.id}`} target="_blank" rel="noreferrer" style={{ fontSize: 11 }}>Sitede gör ↗</a>
           </div>
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 10 }}>
             <button className="btn" style={{ minHeight: 0, padding: '8px 12px' }} disabled={pending || tp.is_daily}
-              onClick={() => start(() => { setDaily(tp.id); })}>{t('setDaily')}</button>
+              onClick={() => start(async () => { await setDaily(tp.id); notify('Günün sorusu güncellendi ✓'); })}>{t('setDaily')}</button>
             <button className="btn" style={{ minHeight: 0, padding: '8px 12px' }} disabled={pending}
-              onClick={() => start(() => { setActive(tp.id, !tp.is_active); })}>{tp.is_active ? t('deactivate') : 'Aktif et'}</button>
+              onClick={() => start(async () => { await setActive(tp.id, !tp.is_active); notify(tp.is_active ? 'Gizlendi' : 'Aktifleştirildi'); })}>{tp.is_active ? t('deactivate') : 'Aktif et'}</button>
             {confirmDel === tp.id ? (
               <button className="btn" style={{ minHeight: 0, padding: '8px 12px', background: 'var(--coral)', color: '#fff', borderColor: 'var(--coral)' }}
-                disabled={pending} onClick={() => start(async () => { await deleteTopic(tp.id); setConfirmDel(null); })}>
+                disabled={pending} onClick={() => start(async () => { await deleteTopic(tp.id); setConfirmDel(null); notify('Konu silindi'); })}>
                 Kalıcı sil — emin misin?
               </button>
             ) : (

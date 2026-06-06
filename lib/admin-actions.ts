@@ -322,3 +322,45 @@ export async function getTopicCounts(): Promise<Record<string, number>> {
   for (const r of (data ?? []) as { topic_id: string; votes: number }[]) out[r.topic_id] = r.votes;
   return out;
 }
+
+// --- Dashboard: votes per day for the last N days ---------------------
+export type DayVotes = { day: string; votes: number };
+export async function getVotesByDay(days = 14): Promise<DayVotes[]> {
+  const writer = await adminWriter(); if (!writer) return [];
+  const since = new Date(Date.now() - days * 86400000).toISOString();
+  const { data } = await writer.from('votes').select('created_at').gte('created_at', since).limit(50000);
+  const map = new Map<string, number>();
+  for (const r of (data ?? []) as { created_at: string }[]) {
+    const d = r.created_at.slice(0, 10);
+    map.set(d, (map.get(d) ?? 0) + 1);
+  }
+  const out: DayVotes[] = [];
+  for (let i = days - 1; i >= 0; i--) {
+    const d = new Date(Date.now() - i * 86400000).toISOString().slice(0, 10);
+    out.push({ day: d, votes: map.get(d) ?? 0 });
+  }
+  return out;
+}
+
+// --- Dashboard: most-voted topics since midnight (server time) --------
+export type TopPoll = { topic_id: string; votes: number };
+export async function getTopPollsToday(): Promise<TopPoll[]> {
+  const writer = await adminWriter(); if (!writer) return [];
+  const start = new Date(); start.setHours(0, 0, 0, 0);
+  const { data } = await writer.from('votes').select('topic_id').gte('created_at', start.toISOString()).limit(50000);
+  const map = new Map<string, number>();
+  for (const r of (data ?? []) as { topic_id: string }[]) map.set(r.topic_id, (map.get(r.topic_id) ?? 0) + 1);
+  return Array.from(map, ([topic_id, votes]) => ({ topic_id, votes }))
+    .sort((a, b) => b.votes - a.votes).slice(0, 5);
+}
+
+// --- Dashboard: counts for tab badges (pending comments, errors) ------
+export type PendingCounts = { comments: number; errors: number };
+export async function getPendingCounts(): Promise<PendingCounts> {
+  const sb = await requireAdmin(); if (!sb) return { comments: 0, errors: 0 };
+  const { count: comments } = await sb.from('comments')
+    .select('id', { count: 'exact', head: true }).eq('status', 'pending');
+  const { count: errors } = await sb.from('app_errors')
+    .select('id', { count: 'exact', head: true });
+  return { comments: comments ?? 0, errors: errors ?? 0 };
+}
