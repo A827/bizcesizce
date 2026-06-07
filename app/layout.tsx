@@ -1,7 +1,6 @@
 import type { Metadata } from 'next';
 import { Fraunces, Spline_Sans, Spline_Sans_Mono } from 'next/font/google';
 import './globals.css';
-import Script from 'next/script';
 import { LanguageProvider } from '@/components/LanguageProvider';
 import { SetupGuard } from '@/components/SetupGuard';
 import { SideRails } from '@/components/SideRails';
@@ -60,6 +59,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <script
           dangerouslySetInnerHTML={{ __html: `(function(){try{var t=localStorage.getItem('theme');if(t!=='light'&&t!=='dark'){t=(window.matchMedia&&window.matchMedia('(prefers-color-scheme: light)').matches)?'light':'dark';}document.documentElement.dataset.theme=t;}catch(e){}})();` }}
         />
+        {/* AdSense loader — in <head> as AdSense recommends, only when configured. */}
+        {ADSENSE_CLIENT && (
+          // eslint-disable-next-line @next/next/no-sync-scripts
+          <script async crossOrigin="anonymous"
+            src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${ADSENSE_CLIENT}`} />
+        )}
       </head>
       <body>
         <script
@@ -81,15 +86,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <SetupGuard />
         <Analytics />
         <SpeedInsights />
-        {ADSENSE_CLIENT && (
-          <Script
-            id="adsbygoogle-init"
-            async
-            strategy="afterInteractive"
-            crossOrigin="anonymous"
-            src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${ADSENSE_CLIENT}`}
-          />
-        )}
       </body>
     </html>
   );
