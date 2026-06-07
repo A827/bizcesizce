@@ -15,6 +15,10 @@ import { Topic, TopicOption } from '@/lib/types';
 export const dynamic = 'force-dynamic';
 
 export default async function Home() {
+  // Flip any scheduled posts whose time has arrived (near-real-time publish).
+  const { publishDuePosts } = await import('@/lib/publish');
+  await publishDuePosts();
+
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 

@@ -17,6 +17,7 @@ export type Topic = {
   comments_enabled: boolean;
   comment_mode: CommentMode;
   scheduled_daily_date: string | null;
+  publish_at?: string | null;
   poll_type: PollType;
   image_url?: string | null;
   description_tr?: string | null;

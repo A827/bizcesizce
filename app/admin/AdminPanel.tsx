@@ -571,6 +571,8 @@ function TopicsTab({ topics }: { topics: Topic[] }) {
   const [opts, setOpts] = useState<{ tr: string; en: string }[]>([{ tr: '', en: '' }, { tr: '', en: '' }]);
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const [showCreate, setShowCreate] = useState(false);
+  const [publishMode, setPublishMode] = useState<'now' | 'later'>('now');
+  const [publishAt, setPublishAt] = useState('');
 
   // --- list controls: search / filter / sort ---
   const [search, setSearch] = useState('');
@@ -646,15 +648,36 @@ function TopicsTab({ topics }: { topics: Topic[] }) {
           </div>
         )}
 
-        <button className="btn btn-accent btn-block" disabled={pending || !canCreate}
+        <div style={{ margin: '6px 0 12px' }}>
+          <div className="kicker" style={{ marginBottom: 6 }}>Yayın · Publish</div>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+            <button type="button" className="btn" style={{ minHeight: 0, padding: '8px 14px',
+              background: publishMode === 'now' ? 'var(--accent)' : 'var(--surface-2)',
+              color: publishMode === 'now' ? 'var(--accent-ink)' : 'var(--text)',
+              borderColor: publishMode === 'now' ? 'var(--accent)' : 'var(--border)' }}
+              onClick={() => setPublishMode('now')}>Şimdi yayınla</button>
+            <button type="button" className="btn" style={{ minHeight: 0, padding: '8px 14px',
+              background: publishMode === 'later' ? 'var(--accent)' : 'var(--surface-2)',
+              color: publishMode === 'later' ? 'var(--accent-ink)' : 'var(--text)',
+              borderColor: publishMode === 'later' ? 'var(--accent)' : 'var(--border)' }}
+              onClick={() => setPublishMode('later')}>İleri tarihe planla</button>
+            {publishMode === 'later' && (
+              <input type="datetime-local" value={publishAt} onChange={(e) => setPublishAt(e.target.value)}
+                style={{ ...inputStyle, marginBottom: 0, width: 'auto', flex: '1 1 200px' }} />
+            )}
+          </div>
+        </div>
+
+        <button className="btn btn-accent btn-block" disabled={pending || !canCreate || (publishMode === 'later' && !publishAt)}
           onClick={() => start(async () => {
             const res = await createTopic({ question_tr: qtr.trim(), question_en: qen.trim(), category: cat,
               image_url: img, description_tr: dtr, description_en: den, source_url: src,
+              publish_at: publishMode === 'later' ? publishAt : null,
               options: multi ? validOpts.map((o) => ({ label_tr: o.tr, label_en: o.en })) : undefined });
             if (res.ok) {
-              setMsg({ ok: true, text: 'Oluşturuldu ✓' });
+              setMsg({ ok: true, text: publishMode === 'later' ? 'Planlandı ✓' : 'Oluşturuldu ✓' });
               setQtr(''); setQen(''); setMulti(false); setOpts([{ tr: '', en: '' }, { tr: '', en: '' }]);
-              setImg(''); setDtr(''); setDen(''); setSrc('');
+              setImg(''); setDtr(''); setDen(''); setSrc(''); setPublishMode('now'); setPublishAt('');
             } else {
               setMsg({ ok: false, text: 'Hata: ' + (res.error ?? '') });
             }
@@ -693,7 +716,12 @@ function TopicsTab({ topics }: { topics: Topic[] }) {
             {tp.question_tr}
           </div>
           <div className="mono muted" style={{ fontSize: 11, marginBottom: 10, display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-            <span>{(counts[tp.id] ?? 0)} oy · {tp.category} · {tp.is_active ? 'aktif' : 'gizli'}</span>
+            <span>{(counts[tp.id] ?? 0)} oy · {tp.category} · {
+              tp.is_active ? 'aktif'
+              : tp.publish_at && new Date(tp.publish_at) > new Date()
+                ? `planlandı: ${new Date(tp.publish_at).toLocaleString('tr-TR', { dateStyle: 'short', timeStyle: 'short' })}`
+                : 'gizli'
+            }</span>
             <a href={`/anket/${tp.id}`} target="_blank" rel="noreferrer" style={{ fontSize: 11 }}>Sitede gör ↗</a>
           </div>
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 10 }}>

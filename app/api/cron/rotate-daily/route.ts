@@ -18,6 +18,10 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ ok: false, error: 'unauthorized' }, { status: 401 });
   }
 
+  // Backstop: publish any scheduled posts whose time has passed.
+  const { publishDuePosts } = await import('@/lib/publish');
+  await publishDuePosts();
+
   const db = createAdminClient();
   const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Europe/Nicosia' });
 

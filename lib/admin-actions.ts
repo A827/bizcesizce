@@ -111,13 +111,18 @@ export async function createTopic(input: {
   question_tr: string; question_en: string; category: Category;
   image_url?: string; description_tr?: string; description_en?: string; source_url?: string;
   options?: { label_tr: string; label_en: string }[];
+  publish_at?: string | null;
 }) {
   const writer = await adminWriter(); if (!writer) return { ok: false, error: 'not admin' };
   const opts = (input.options ?? []).filter((o) => o.label_tr.trim());
   const isMulti = opts.length >= 2;
+  // Scheduled publishing: a future publish_at means create it hidden until then.
+  const pa = input.publish_at ? new Date(input.publish_at) : null;
+  const scheduled = pa && !isNaN(pa.getTime()) && pa.getTime() > Date.now();
   const { data: topic, error } = await writer.from('topics').insert({
     question_tr: input.question_tr, question_en: input.question_en, category: input.category,
-    is_active: true, poll_type: isMulti ? 'multi' : 'binary',
+    is_active: scheduled ? false : true, poll_type: isMulti ? 'multi' : 'binary',
+    publish_at: scheduled ? pa!.toISOString() : null,
     image_url: input.image_url?.trim() || null,
     description_tr: input.description_tr?.trim() || null,
     description_en: input.description_en?.trim() || null,
