@@ -59,6 +59,38 @@ export async function approveSuggestion(id: string) {
   revalidatePath('/admin'); revalidatePath('/'); return { ok: true };
 }
 
+// --- News sources (sites the AI scanner reads) ----------------------
+export type NewsSource = { id: string; url: string; label: string | null; is_active: boolean; created_at: string };
+
+export async function listNewsSources(): Promise<NewsSource[]> {
+  const w = await adminWriter(); if (!w) return [];
+  const { data } = await w.from('news_sources').select('*').order('created_at', { ascending: true });
+  return (data ?? []) as NewsSource[];
+}
+
+export async function addNewsSource(input: { url: string; label: string }) {
+  const w = await adminWriter(); if (!w) return { ok: false as const, error: 'not admin' };
+  const url = input.url.trim();
+  if (!/^https?:\/\//i.test(url)) return { ok: false as const, error: 'invalid url' };
+  const { error } = await w.from('news_sources').insert({ url, label: input.label.trim() || null, is_active: true });
+  if (error) return { ok: false as const, error: error.message };
+  await logAudit('add_news_source', url);
+  revalidatePath('/admin'); return { ok: true as const };
+}
+
+export async function setNewsSourceActive(id: string, active: boolean) {
+  const w = await adminWriter(); if (!w) return { ok: false };
+  await w.from('news_sources').update({ is_active: active }).eq('id', id);
+  revalidatePath('/admin'); return { ok: true };
+}
+
+export async function deleteNewsSource(id: string) {
+  const w = await adminWriter(); if (!w) return { ok: false };
+  await w.from('news_sources').delete().eq('id', id);
+  await logAudit('delete_news_source', id);
+  revalidatePath('/admin'); return { ok: true };
+}
+
 // Manually trigger the AI news scan from the admin panel ("Run now").
 export async function runNewsIngestion() {
   const sb = await requireAdmin(); if (!sb) return { ok: false, inserted: 0, message: 'not admin' };

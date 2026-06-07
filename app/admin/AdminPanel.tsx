@@ -18,6 +18,7 @@ import {
   deleteTopic, getTopicCounts,
   getVotesByDay, getTopPollsToday, getPendingCounts, DayVotes, TopPoll,
   runNewsIngestion,
+  listNewsSources, addNewsSource, setNewsSourceActive, deleteNewsSource, NewsSource,
 } from '@/lib/admin-actions';
 
 // --- Lightweight toast for save/confirmation feedback ---
@@ -411,6 +412,56 @@ function AnnouncementEditor() {
   );
 }
 
+function NewsSourcesManager() {
+  const notify = useToast();
+  const [open, setOpen] = useState(false);
+  const [items, setItems] = useState<NewsSource[] | null>(null);
+  const [pending, start] = useTransition();
+  const [url, setUrl] = useState(''); const [label, setLabel] = useState('');
+  const refresh = async () => setItems(await listNewsSources());
+  useEffect(() => { if (open && items === null) refresh(); }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  return (
+    <div className="card" style={{ padding: 14 }}>
+      <button className="btn" style={{ minHeight: 0, padding: '6px 12px' }} onClick={() => setOpen((o) => !o)}>
+        {open ? 'Kaynakları gizle' : '📰 Haber kaynakları'}
+      </button>
+      {open && (
+        <div style={{ marginTop: 12 }}>
+          <p className="muted" style={{ fontSize: 13, marginTop: 0 }}>
+            Yapay zekânın konu aradığı siteler. Sadece aktif olanlar taranır.
+          </p>
+          {items === null ? <div className="skeleton" style={{ height: 50 }} /> :
+            items.length === 0 ? <p className="muted" style={{ fontSize: 13 }}>Henüz kaynak yok.</p> :
+            items.map((s) => (
+              <div key={s.id} style={{ display: 'flex', gap: 8, alignItems: 'center', padding: '8px 0', borderBottom: '1px solid var(--border)' }}>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 14 }}>{s.label || s.url}</div>
+                  <div className="mono muted" style={{ fontSize: 11, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.url}</div>
+                </div>
+                <button className="btn" style={{ minHeight: 0, padding: '5px 10px', fontSize: 12,
+                  color: s.is_active ? 'var(--accent)' : 'var(--muted)' }} disabled={pending}
+                  onClick={() => start(async () => { await setNewsSourceActive(s.id, !s.is_active); await refresh(); })}>
+                  {s.is_active ? 'Aktif' : 'Pasif'}
+                </button>
+                <button className="btn" style={{ minHeight: 0, padding: '5px 10px', fontSize: 12, color: 'var(--coral)', borderColor: 'var(--coral)' }}
+                  disabled={pending} onClick={() => start(async () => { await deleteNewsSource(s.id); await refresh(); notify('Kaynak silindi'); })}>Sil</button>
+              </div>
+            ))}
+          <div style={{ display: 'flex', gap: 8, marginTop: 12, flexWrap: 'wrap' }}>
+            <input style={{ ...inputStyle, marginBottom: 0, flex: 2, minWidth: 180 }} placeholder="https://haber-sitesi.com/..." value={url} onChange={(e) => setUrl(e.target.value)} />
+            <input style={{ ...inputStyle, marginBottom: 0, flex: 1, minWidth: 120 }} placeholder="İsim (ops.)" value={label} onChange={(e) => setLabel(e.target.value)} />
+            <button className="btn btn-accent" style={{ minHeight: 0, padding: '10px 16px' }} disabled={pending || !url.trim()}
+              onClick={() => start(async () => { const r = await addNewsSource({ url, label }); if (r.ok) { setUrl(''); setLabel(''); await refresh(); notify('Kaynak eklendi ✓'); } else notify('Geçersiz adres'); })}>
+              Ekle
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function SuggestionsTab({ suggestions }: { suggestions: Suggestion[] }) {
   const { t } = useLang();
   const notify = useToast();
@@ -436,6 +487,8 @@ function SuggestionsTab({ suggestions }: { suggestions: Suggestion[] }) {
         <button className="btn btn-accent" style={{ minHeight: 0, padding: '10px 16px' }} disabled={scanning}
           onClick={scan}>{scanning ? 'Taranıyor…' : 'Şimdi tara'}</button>
       </div>
+
+      <NewsSourcesManager />
 
       {suggestions.length === 0 ? <p className="muted">Bekleyen öneri yok.</p> :
         suggestions.map((s) => (

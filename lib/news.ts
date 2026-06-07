@@ -43,8 +43,22 @@ function extractHeadlines(html: string, host: string): Headline[] {
   return out;
 }
 
+// Active source URLs: env override wins (ops escape hatch); otherwise the
+// admin-managed news_sources table; otherwise the built-in defaults.
+async function getSourceUrls(): Promise<string[]> {
+  const envList = process.env.NEWS_SOURCES?.split(',').map((s) => s.trim()).filter(Boolean);
+  if (envList && envList.length) return envList;
+  try {
+    const db = createAdminClient();
+    const { data } = await db.from('news_sources').select('url').eq('is_active', true);
+    const urls = ((data ?? []) as { url: string }[]).map((r) => r.url).filter(Boolean);
+    if (urls.length) return urls;
+  } catch { /* fall through to defaults */ }
+  return DEFAULT_SOURCES;
+}
+
 async function fetchHeadlines(): Promise<Headline[]> {
-  const sources = (process.env.NEWS_SOURCES?.split(',').map((s) => s.trim()).filter(Boolean)) ?? DEFAULT_SOURCES;
+  const sources = await getSourceUrls();
   const all: Headline[] = [];
   const seen = new Set<string>();
   for (const src of sources) {
