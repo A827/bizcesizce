@@ -55,6 +55,12 @@ export const viewport = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="tr" className={`${fraunces.variable} ${spline.variable} ${splineMono.variable}`}>
+      <head>
+        {/* Set the theme before first paint so there's no light/dark flash. */}
+        <script
+          dangerouslySetInnerHTML={{ __html: `(function(){try{var t=localStorage.getItem('theme');if(t!=='light'&&t!=='dark'){t=(window.matchMedia&&window.matchMedia('(prefers-color-scheme: light)').matches)?'light':'dark';}document.documentElement.dataset.theme=t;}catch(e){}})();` }}
+        />
+      </head>
       <body>
         <script
           type="application/ld+json"

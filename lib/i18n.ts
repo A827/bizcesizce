@@ -81,6 +81,8 @@ export const STRINGS = {
   // Profile page
   profileTitle:   { tr: 'Profilim',                                  en: 'My profile' },
   profileLink:    { tr: 'Profil',                                    en: 'Profile' },
+  navHome:        { tr: 'Anketler',                                  en: 'Polls' },
+  headerTag:      { tr: 'Kuzey Kıbrıs ne düşünüyor?',                en: 'What does North Cyprus think?' },
   labDob:         { tr: 'Doğum tarihi',                              en: 'Date of birth' },
   labPhone:       { tr: 'Telefon',                                   en: 'Phone' },
   editable:       { tr: 'Düzenlenebilir',                            en: 'Editable' },
