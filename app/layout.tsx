@@ -31,7 +31,10 @@ export const metadata: Metadata = {
   metadataBase: new URL('https://bizcesizce.com'),
   alternates: { canonical: '/' },
   keywords: ['Kuzey Kıbrıs anket', 'KKTC anket', 'kamuoyu', 'oylama', 'North Cyprus poll', 'Bizce sizce'],
-  verification: { google: 'XfEshfx_SH9SV7fnQiY9Q7bjRjkRnf2MK9nvJl-M0gw' },
+  verification: {
+    google: 'XfEshfx_SH9SV7fnQiY9Q7bjRjkRnf2MK9nvJl-M0gw',
+    other: { 'google-adsense-account': 'ca-pub-7575582564071335' },
+  },
   openGraph: {
     title: 'Bizce sizce',
     description: 'Kuzey Kıbrıs ne düşünüyor? Oyla, anında sonuçları gör.',
