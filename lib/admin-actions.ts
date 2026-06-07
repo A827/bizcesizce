@@ -24,7 +24,7 @@ async function logAudit(action: string, detail: string) {
     await w.from('admin_audit').insert({ actor: user?.email ?? user?.id ?? 'unknown', action, detail });
   } catch { /* never block the main action on audit logging */ }
 }
-import { Category, CommentMode, CommentStatus } from '@/lib/constants';
+import { Category, CommentMode, CommentStatus, CATEGORIES } from '@/lib/constants';
 import { Sponsor, SponsorPlacement } from '@/lib/types';
 
 async function requireAdmin() {
@@ -35,10 +35,38 @@ async function requireAdmin() {
   return p?.is_admin ? supabase : null;
 }
 
+// Approving a suggestion now PUBLISHES it as a live binary poll, then marks
+// the suggestion approved. Falls back gracefully if the row is missing.
 export async function approveSuggestion(id: string) {
-  const sb = await requireAdmin(); if (!sb) return { ok: false };
-  await sb.from('topic_suggestions').update({ status: 'approved' }).eq('id', id);
-  revalidatePath('/admin'); return { ok: true };
+  const w = await adminWriter(); if (!w) return { ok: false };
+  const { data: s } = await w.from('topic_suggestions')
+    .select('question_tr, question_en, category, source_url').eq('id', id).single();
+  if (!s?.question_tr) {
+    await w.from('topic_suggestions').update({ status: 'approved' }).eq('id', id);
+    revalidatePath('/admin'); return { ok: true };
+  }
+  const cats = new Set<string>(CATEGORIES as readonly string[]);
+  const category = cats.has((s as { category?: string }).category ?? '') ? (s as { category: string }).category : 'Other';
+  await w.from('topics').insert({
+    question_tr: s.question_tr,
+    question_en: s.question_en || s.question_tr,
+    category, is_active: true, poll_type: 'binary',
+    comments_enabled: true, comment_mode: 'auto',
+    source_url: (s as { source_url?: string }).source_url || null,
+  });
+  await w.from('topic_suggestions').update({ status: 'approved' }).eq('id', id);
+  await logAudit('approve_suggestion', s.question_tr.slice(0, 80));
+  revalidatePath('/admin'); revalidatePath('/'); return { ok: true };
+}
+
+// Manually trigger the AI news scan from the admin panel ("Run now").
+export async function runNewsIngestion() {
+  const sb = await requireAdmin(); if (!sb) return { ok: false, inserted: 0, message: 'not admin' };
+  const { ingestNews } = await import('@/lib/news');
+  const result = await ingestNews(4);
+  await logAudit('ai_ingest', result.message);
+  revalidatePath('/admin');
+  return result;
 }
 
 export async function rejectSuggestion(id: string) {

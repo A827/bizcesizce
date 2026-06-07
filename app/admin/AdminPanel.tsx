@@ -17,6 +17,7 @@ import {
   getAnnouncementSettings, setAnnouncement,
   deleteTopic, getTopicCounts,
   getVotesByDay, getTopPollsToday, getPendingCounts, DayVotes, TopPoll,
+  runNewsIngestion,
 } from '@/lib/admin-actions';
 
 // --- Lightweight toast for save/confirmation feedback ---
@@ -26,7 +27,11 @@ import { getOptionResults } from '@/lib/actions';
 import { uploadTopicImage } from '@/lib/upload';
 import { Sponsor, SponsorPlacement, OptionResult } from '@/lib/types';
 
-type Suggestion = { id: string; question_tr: string; question_en: string | null };
+type Suggestion = {
+  id: string; question_tr: string; question_en: string | null;
+  source?: string | null; source_url?: string | null;
+  category?: string | null; rationale?: string | null;
+};
 type Tab = 'overview' | 'suggestions' | 'topics' | 'results' | 'moderation' | 'sponsors' | 'people' | 'errors';
 
 const inputStyle: React.CSSProperties = {
@@ -408,17 +413,48 @@ function AnnouncementEditor() {
 
 function SuggestionsTab({ suggestions }: { suggestions: Suggestion[] }) {
   const { t } = useLang();
+  const notify = useToast();
   const [pending, start] = useTransition();
-  if (suggestions.length === 0) return <p className="muted">—</p>;
+  const [scanning, setScanning] = useState(false);
+
+  async function scan() {
+    setScanning(true);
+    const r = await runNewsIngestion();
+    setScanning(false);
+    notify(r.inserted > 0 ? `${r.inserted} yeni öneri eklendi ✓` : (r.message || 'Yeni öneri bulunamadı'));
+  }
+
   return (
     <>
-      {suggestions.map((s) => (
+      <div className="card" style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
+        <div style={{ flex: 1, minWidth: 200 }}>
+          <div className="kicker" style={{ margin: 0 }}>🤖 Yapay zekâ · haberlerden konu bul</div>
+          <div className="muted" style={{ fontSize: 13, marginTop: 4 }}>
+            Her gün otomatik tarar. İstersen şimdi de çalıştır.
+          </div>
+        </div>
+        <button className="btn btn-accent" style={{ minHeight: 0, padding: '10px 16px' }} disabled={scanning}
+          onClick={scan}>{scanning ? 'Taranıyor…' : 'Şimdi tara'}</button>
+      </div>
+
+      {suggestions.length === 0 ? <p className="muted">Bekleyen öneri yok.</p> :
+        suggestions.map((s) => (
         <div className="card" key={s.id}>
+          {(s.source === 'ai' || s.category || s.source_url) && (
+            <div className="mono" style={{ fontSize: 11, color: 'var(--muted)', marginBottom: 6, display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+              {s.source === 'ai' && <span style={{ color: 'var(--accent)' }}>🤖 AI</span>}
+              {s.category && <span>· {s.category}</span>}
+              {s.source_url && <a href={s.source_url} target="_blank" rel="noreferrer">· kaynak ↗</a>}
+            </div>
+          )}
           <div className="serif" style={{ fontSize: 18, marginBottom: 4 }}>{s.question_tr}</div>
-          {s.question_en && <div className="muted" style={{ marginBottom: 12 }}>{s.question_en}</div>}
+          {s.question_en && <div className="muted" style={{ marginBottom: s.rationale ? 6 : 12 }}>{s.question_en}</div>}
+          {s.rationale && <div className="muted" style={{ fontSize: 13, marginBottom: 12, fontStyle: 'italic' }}>{s.rationale}</div>}
           <div className="vote-row">
-            <button className="btn btn-accent" disabled={pending} onClick={() => start(() => { approveSuggestion(s.id); })}>{t('approve')}</button>
-            <button className="btn" disabled={pending} onClick={() => start(() => { rejectSuggestion(s.id); })}>{t('reject')}</button>
+            <button className="btn btn-accent" disabled={pending}
+              onClick={() => start(async () => { await approveSuggestion(s.id); notify('Yayınlandı ✓'); })}>{t('approve')}</button>
+            <button className="btn" disabled={pending}
+              onClick={() => start(async () => { await rejectSuggestion(s.id); notify('Reddedildi'); })}>{t('reject')}</button>
           </div>
         </div>
       ))}
