@@ -114,7 +114,7 @@ export default async function PublicPollPage({ params }: { params: Promise<{ id:
     <>
       <Header />
       <main className="shell">
-        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, '\\u003c') }} />
         <article className="card daily" style={{ marginTop: 16 }}>
           <div className="kicker">
             Bizce sizce · <Link href={`/kategori/${(topic.category as Category).toLowerCase()}`} style={{ color: 'var(--accent)' }}>

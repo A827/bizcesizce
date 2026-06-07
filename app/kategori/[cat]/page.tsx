@@ -59,7 +59,7 @@ export default async function CategoryPage({ params }: { params: Promise<{ cat: 
     <>
       <Header />
       <main className="shell">
-        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, '\\u003c') }} />
         <p className="mono muted" style={{ fontSize: 12, marginTop: 12 }}>
           <Link href="/">Anasayfa</Link> · {label}
         </p>

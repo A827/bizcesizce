@@ -27,7 +27,7 @@ export default function HowItWorksPage() {
     <>
       <Header />
       <main className="shell" style={{ maxWidth: 640 }}>
-        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqLd) }} />
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqLd).replace(/</g, '\\u003c') }} />
         <h1 className="serif" style={{ fontSize: 30 }}>Nasıl çalışır · How it works</h1>
 
         <h2 className="serif" style={h2}>Herkese bir oy</h2>
