@@ -128,10 +128,16 @@ export function TopicCard({ data }: { data: TopicCardData }) {
               {userPickedTop ? t('withMajority') : t('outlier')}
             </div>
           )}
-          <a className="btn btn-ghost btn-block" style={{ marginTop: 16 }}
-             href={`/api/share?topic=${topic.id}&option=${myOptionId}&lang=${lang}`} target="_blank" rel="noreferrer">
-            {t('share')}
-          </a>
+          <div className="vote-row" style={{ marginTop: 16 }}>
+            <a className="btn btn-ghost"
+               href={`/api/share?topic=${topic.id}&option=${myOptionId}&lang=${lang}`} target="_blank" rel="noreferrer">
+              {t('share')}
+            </a>
+            <a className="btn btn-ghost" target="_blank" rel="noreferrer"
+               href={`https://wa.me/?text=${encodeURIComponent(`${question}\n\nhttps://bizcesizce.com/anket/${topic.id}`)}`}>
+              {t('shareWhatsapp')}
+            </a>
+          </div>
         </div>
       ) : (
         <div className="bar-wrap">
@@ -172,10 +178,16 @@ export function TopicCard({ data }: { data: TopicCardData }) {
             );
           })()}
 
-          <a className="btn btn-ghost btn-block" style={{ marginTop: 16 }}
-             href={`/api/share?topic=${topic.id}&choice=${myChoice}&lang=${lang}`} target="_blank" rel="noreferrer">
-            {t('share')}
-          </a>
+          <div className="vote-row" style={{ marginTop: 16 }}>
+            <a className="btn btn-ghost"
+               href={`/api/share?topic=${topic.id}&choice=${myChoice}&lang=${lang}`} target="_blank" rel="noreferrer">
+              {t('share')}
+            </a>
+            <a className="btn btn-ghost" target="_blank" rel="noreferrer"
+               href={`https://wa.me/?text=${encodeURIComponent(`${question}\n\nhttps://bizcesizce.com/anket/${topic.id}`)}`}>
+              {t('shareWhatsapp')}
+            </a>
+          </div>
         </div>
       ))}
 

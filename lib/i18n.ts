@@ -185,7 +185,11 @@ export const STRINGS = {
   advertise:      { tr: 'Reklam ver',                                en: 'Advertise' },
   archive:        { tr: 'Arşiv',                                     en: 'Archive' },
   howItWorks:     { tr: 'Nasıl çalışır',                             en: 'How it works' },
-  share:          { tr: 'Paylaş',                                    en: 'Share' },
+  share:          { tr: 'Görsel paylaş',                             en: 'Share image' },
+  shareWhatsapp:  { tr: "WhatsApp'ta paylaş",                        en: 'Share on WhatsApp' },
+  notifTitle:     { tr: 'E-posta bildirimleri',                      en: 'Email notifications' },
+  notifDaily:     { tr: 'Günün sorusunu e-posta ile gönder',         en: 'Email me the daily question' },
+  notifReplies:   { tr: 'Yorumuma yanıt gelince haber ver',          en: 'Notify me when someone replies' },
   source:         { tr: 'Kaynak',                                     en: 'Source' },
   signOut:        { tr: 'Çıkış yap',                                 en: 'Sign out' },
 } as const;

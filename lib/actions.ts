@@ -195,6 +195,11 @@ export async function postComment(topicId: string, body: string, parentId?: stri
       await admin.from('comments')
         .update({ status: decision === 'approve' ? 'approved' : 'rejected' })
         .eq('id', inserted.id);
+      // If an approved reply, let the parent comment's author know.
+      if (decision === 'approve' && parentId) {
+        const { notifyReply } = await import('@/lib/notify');
+        await notifyReply(inserted.id);
+      }
     }
   }
 
@@ -262,6 +267,7 @@ export type MyProfile = {
   region: string | null; age_band: string | null; gender: string | null;
   marital_status: string | null; employment: string | null; education: string | null;
   origin: string | null; phone: string | null; created_at: string;
+  notify_daily?: boolean; notify_replies?: boolean;
 };
 
 export async function getMyProfile(): Promise<MyProfile | null> {
@@ -269,9 +275,22 @@ export async function getMyProfile(): Promise<MyProfile | null> {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return null;
   const { data } = await supabase.from('profiles')
-    .select('first_name, last_name, date_of_birth, region, age_band, gender, marital_status, employment, education, origin, phone, created_at')
+    .select('first_name, last_name, date_of_birth, region, age_band, gender, marital_status, employment, education, origin, phone, created_at, notify_daily, notify_replies')
     .eq('user_id', user.id).single();
   return (data ?? null) as MyProfile | null;
+}
+
+// Update the caller's email-notification preferences.
+export async function setNotifyPrefs(input: { daily: boolean; replies: boolean }) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { ok: false as const };
+  const { error } = await supabase.from('profiles')
+    .update({ notify_daily: input.daily, notify_replies: input.replies })
+    .eq('user_id', user.id);
+  if (error) return { ok: false as const };
+  revalidatePath('/profile');
+  return { ok: true as const };
 }
 
 // A user's own voting history (their answers, with the question text).

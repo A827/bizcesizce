@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useLang } from '@/components/LanguageProvider';
 import { createClient } from '@/lib/supabase/client';
-import { updateProfile, deleteMyAccount, getMyVotes, MyProfile, MyVoteRow } from '@/lib/actions';
+import { updateProfile, deleteMyAccount, getMyVotes, setNotifyPrefs, MyProfile, MyVoteRow } from '@/lib/actions';
 import Link from 'next/link';
 import { MARITAL_STATUSES, MaritalStatus } from '@/lib/constants';
 import { StringKey } from '@/lib/i18n';
@@ -22,6 +22,13 @@ export function ProfileView({ profile, email }: { profile: MyProfile; email: str
   const [deleting, setDeleting] = useState(false);
   const [votes, setVotes] = useState<MyVoteRow[] | null>(null);
   useEffect(() => { getMyVotes().then(setVotes); }, []);
+
+  const [notifyDaily, setNotifyDaily] = useState(profile.notify_daily ?? true);
+  const [notifyReplies, setNotifyReplies] = useState(profile.notify_replies ?? true);
+  function saveNotify(daily: boolean, replies: boolean) {
+    setNotifyDaily(daily); setNotifyReplies(replies);
+    setNotifyPrefs({ daily, replies });
+  }
 
   async function removeAccount() {
     setDeleting(true);
@@ -114,6 +121,21 @@ export function ProfileView({ profile, email }: { profile: MyProfile; email: str
               </div>
             </Link>
           ))}
+      </div>
+
+      {/* Email notifications */}
+      <div className="kicker" style={{ marginTop: 22 }}>{L('notifTitle')}</div>
+      <div className="card" style={{ marginTop: 8 }}>
+        <label style={{ display: 'flex', gap: 10, alignItems: 'center', cursor: 'pointer', fontSize: 14 }}>
+          <input type="checkbox" checked={notifyDaily}
+            onChange={(e) => saveNotify(e.target.checked, notifyReplies)} />
+          {L('notifDaily')}
+        </label>
+        <label style={{ display: 'flex', gap: 10, alignItems: 'center', cursor: 'pointer', fontSize: 14, marginTop: 12 }}>
+          <input type="checkbox" checked={notifyReplies}
+            onChange={(e) => saveNotify(notifyDaily, e.target.checked)} />
+          {L('notifReplies')}
+        </label>
       </div>
 
       {/* Locked */}

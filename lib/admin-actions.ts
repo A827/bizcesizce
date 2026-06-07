@@ -233,6 +233,10 @@ export async function listPendingComments(): Promise<PendingComment[]> {
 export async function moderateComment(id: string, status: CommentStatus) {
   const sb = await requireAdmin(); if (!sb) return { ok: false };
   await sb.from('comments').update({ status }).eq('id', id);
+  if (status === 'approved') {
+    const { notifyReply } = await import('@/lib/notify');
+    await notifyReply(id);
+  }
   await logAudit('moderate_comment', `${status}`);
   revalidatePath('/admin'); revalidatePath('/'); return { ok: true };
 }
