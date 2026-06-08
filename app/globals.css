@@ -286,3 +286,9 @@ img, svg, video { max-width: 100%; height: auto; }
 @media (prefers-reduced-motion: reduce) {
   * { animation: none !important; transition: none !important; }
 }
+
+
+/* Admin: stack side-by-side input pairs (TR/EN options) on phones. */
+@media (max-width: 520px) {
+  .adm-pair { flex-direction: column !important; align-items: stretch !important; }
+}
