@@ -198,8 +198,8 @@ function PeopleTab() {
       <p className="muted" style={{ fontSize: 12, marginBottom: 12 }}>
         Yalnızca sen görebilirsin · Visible to admins only.
       </p>
-      <div style={{ overflowX: 'auto' }}>
-        <table style={{ borderCollapse: 'collapse', width: '100%', fontSize: 12 }}>
+      <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
+        <table style={{ borderCollapse: 'collapse', width: '100%', minWidth: 720, fontSize: 12 }}>
           <thead>
             <tr style={{ textAlign: 'left', color: 'var(--muted)' }}>
               {['Durum', 'Ad', 'Soyad', 'Doğum', 'Bölge', 'Cinsiyet', 'Medeni', 'İş', 'Eğitim', 'Köken', 'Telefon', ''].map((h, i) => (
@@ -637,7 +637,7 @@ function TopicsTab({ topics }: { topics: Topic[] }) {
         {multi && (
           <div style={{ marginBottom: 10 }}>
             {opts.map((o, i) => (
-              <div key={i} style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
+              <div key={i} className="adm-pair" style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
                 <input style={{ ...inputStyle, marginBottom: 0 }} placeholder={`Şık ${i + 1} (TR)`} value={o.tr} onChange={(e) => setOpt(i, 'tr', e.target.value)} />
                 <input style={{ ...inputStyle, marginBottom: 0 }} placeholder={`Option ${i + 1} (EN)`} value={o.en} onChange={(e) => setOpt(i, 'en', e.target.value)} />
               </div>
@@ -816,7 +816,7 @@ function EditTopic({ tp }: { tp: Topic }) {
                     onClick={() => start(async () => { await deleteOption(o.id); setOpts((a) => a.filter((x) => x.id !== o.id)); })}>Sil</button>
                 </div>
               ))}
-              <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+              <div className="adm-pair" style={{ display: 'flex', gap: 8, marginTop: 8 }}>
                 <input style={{ ...inp, marginBottom: 0 }} placeholder="Yeni şık (TR)" value={newTr} onChange={(e) => setNewTr(e.target.value)} />
                 <input style={{ ...inp, marginBottom: 0 }} placeholder="(EN)" value={newEn} onChange={(e) => setNewEn(e.target.value)} />
                 <button className="btn btn-accent" style={{ minHeight: 0, padding: '8px 12px' }} disabled={pending || !newTr.trim()}
